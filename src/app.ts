@@ -6,6 +6,7 @@ import { helmetMiddleware, corsMiddleware, hppMiddleware } from './middleware/se
 import { globalRateLimiter } from './middleware/rate-limit.js';
 import { notFoundHandler } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
+import { healthRouter } from './modules/health/health.routes.js';
 
 /**
  * Creates and configures the Express application.
@@ -52,7 +53,8 @@ export function createApp(): Express {
   // 7. Global rate limiting
   app.use(globalRateLimiter);
 
-  // 8. Application routes will be mounted here in subsequent phases
+  // 8. Application routes
+  app.use(healthRouter);
 
   // 9. 404 handler for unmatched routes
   app.use(notFoundHandler);
