@@ -19,7 +19,13 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
       }
 
       if (schemas.query) {
-        req.query = schemas.query.parse(req.query) as typeof req.query;
+        const parsed = schemas.query.parse(req.query);
+        Object.defineProperty(req, 'query', {
+          value: parsed,
+          writable: true,
+          enumerable: true,
+          configurable: true,
+        });
       }
 
       if (schemas.body) {

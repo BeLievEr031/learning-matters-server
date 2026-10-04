@@ -1,12 +1,13 @@
 import express, { type Express } from 'express';
 import { env } from './config/env.js';
-import { BODY_SIZE_LIMIT } from './config/constants.js';
+import { BODY_SIZE_LIMIT, API_V1 } from './config/constants.js';
 import { requestIdMiddleware, httpLoggerMiddleware } from './middleware/request-id.js';
 import { helmetMiddleware, corsMiddleware, hppMiddleware } from './middleware/security.js';
 import { globalRateLimiter } from './middleware/rate-limit.js';
 import { notFoundHandler } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { healthRouter } from './modules/health/health.routes.js';
+import { usersRouter } from './modules/users/users.routes.js';
 
 /**
  * Creates and configures the Express application.
@@ -55,6 +56,7 @@ export function createApp(): Express {
 
   // 8. Application routes
   app.use(healthRouter);
+  app.use(`${API_V1}/users`, usersRouter);
 
   // 9. 404 handler for unmatched routes
   app.use(notFoundHandler);
