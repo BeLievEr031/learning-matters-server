@@ -17,6 +17,7 @@ export default tseslint.config(
   ...tseslint.configs.stylisticTypeChecked,
 
   {
+    files: ['src/**/*.ts'],
     languageOptions: {
       parserOptions: {
         project: true,
@@ -41,6 +42,10 @@ export default tseslint.config(
       // No console – use the pino logger instead
       'no-console': 'error',
     },
+  },
+  {
+    files: ['*.ts', '*.js', '*.mjs', '*.cjs'],
+    ...tseslint.configs.disableTypeChecked,
   },
 
   // Disable formatting rules that conflict with Prettier (always last)
