@@ -1,6 +1,8 @@
 import express, { type Express } from 'express';
 import { env } from './config/env.js';
 import { BODY_SIZE_LIMIT } from './config/constants.js';
+import { notFoundHandler } from './middleware/not-found.js';
+import { errorHandler } from './middleware/error-handler.js';
 
 /**
  * Creates and configures the Express application.
@@ -18,6 +20,12 @@ export function createApp(): Express {
   // Request body parsing with strict size limits
   app.use(express.json({ limit: BODY_SIZE_LIMIT }));
   app.use(express.urlencoded({ extended: false, limit: BODY_SIZE_LIMIT }));
+
+  // 404 handler for unmatched routes
+  app.use(notFoundHandler);
+
+  // Global error handler
+  app.use(errorHandler);
 
   return app;
 }
