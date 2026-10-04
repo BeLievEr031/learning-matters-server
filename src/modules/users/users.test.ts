@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import { createApp } from '../../app.js';
+import { env } from '../../config/env.js';
 import { usersRepository, type UserSafe } from './users.repository.js';
 import { encodeCursor, decodeCursor } from '../../lib/pagination.js';
 import type { ErrorResponsePayload } from '../../middleware/error-handler.js';
@@ -22,6 +24,11 @@ describe('Users Module', () => {
     updatedAt: new Date('2026-01-01T12:00:00Z'),
     deletedAt: null,
   };
+
+  const adminToken = jwt.sign(
+    { sub: sampleUser.id, role: 'admin', jti: 'admin-jti' },
+    env.JWT_ACCESS_SECRET,
+  );
 
   describe('Pagination Utilities', () => {
     it('encodes and decodes cursor correctly', () => {
@@ -78,7 +85,9 @@ describe('Users Module', () => {
       const app = createApp();
       vi.spyOn(usersRepository, 'findById').mockResolvedValue(sampleUser);
 
-      const res = await request(app).get(`/api/v1/users/${sampleUser.id}`);
+      const res = await request(app)
+        .get(`/api/v1/users/${sampleUser.id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
       const body = res.body as { data: UserResponseData };
@@ -91,11 +100,40 @@ describe('Users Module', () => {
       const app = createApp();
       vi.spyOn(usersRepository, 'findById').mockResolvedValue(null);
 
-      const res = await request(app).get('/api/v1/users/22222222-2222-4222-a222-222222222222');
+      const res = await request(app)
+        .get('/api/v1/users/22222222-2222-4222-a222-222222222222')
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(404);
       const body = res.body as ErrorResponsePayload;
       expect(body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('returns 401 without authentication', async () => {
+      const app = createApp();
+      const res = await request(app).get(`/api/v1/users/${sampleUser.id}`);
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('GET /api/v1/users/me', () => {
+    it('returns current authenticated user profile', async () => {
+      const app = createApp();
+      vi.spyOn(usersRepository, 'findById').mockResolvedValue(sampleUser);
+
+      const userToken = jwt.sign(
+        { sub: sampleUser.id, role: 'user', jti: 'user-jti' },
+        env.JWT_ACCESS_SECRET,
+      );
+
+      const res = await request(app)
+        .get('/api/v1/users/me')
+        .set('Authorization', `Bearer ${userToken}`);
+
+      expect(res.status).toBe(200);
+      const body = res.body as { data: UserResponseData };
+      expect(body.data.id).toBe(sampleUser.id);
+      expect(body.data.email).toBe(sampleUser.email);
     });
   });
 
@@ -111,6 +149,7 @@ describe('Users Module', () => {
 
       const res = await request(app)
         .patch(`/api/v1/users/${sampleUser.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ email: 'newemail@learning-matters.com' });
 
       expect(res.status).toBe(200);
@@ -126,7 +165,9 @@ describe('Users Module', () => {
       vi.spyOn(usersRepository, 'findById').mockResolvedValue(sampleUser);
       vi.spyOn(usersRepository, 'softDelete').mockResolvedValue(true);
 
-      const res = await request(app).delete(`/api/v1/users/${sampleUser.id}`);
+      const res = await request(app)
+        .delete(`/api/v1/users/${sampleUser.id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(204);
     });
@@ -151,7 +192,9 @@ describe('Users Module', () => {
 
       vi.spyOn(usersRepository, 'list').mockResolvedValue(usersList);
 
-      const res = await request(app).get('/api/v1/users?limit=2');
+      const res = await request(app)
+        .get('/api/v1/users?limit=2')
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
       const body = res.body as {
@@ -167,7 +210,9 @@ describe('Users Module', () => {
 
     it('rejects limit exceeding MAX_PAGE_SIZE (100) with 400', async () => {
       const app = createApp();
-      const res = await request(app).get('/api/v1/users?limit=500');
+      const res = await request(app)
+        .get('/api/v1/users?limit=500')
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(400);
       const body = res.body as ErrorResponsePayload;

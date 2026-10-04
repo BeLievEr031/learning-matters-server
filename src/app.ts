@@ -7,6 +7,7 @@ import { globalRateLimiter } from './middleware/rate-limit.js';
 import { notFoundHandler } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { healthRouter } from './modules/health/health.routes.js';
+import { authRouter } from './modules/auth/auth.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
 
 /**
@@ -56,6 +57,7 @@ export function createApp(): Express {
 
   // 8. Application routes
   app.use(healthRouter);
+  app.use(`${API_V1}/auth`, authRouter);
   app.use(`${API_V1}/users`, usersRouter);
 
   // 9. 404 handler for unmatched routes
