@@ -1,0 +1,16 @@
+{
+  "name": "learning-matters-server",
+  "version": "1.0.0",
+  "description": "Production-grade REST API backend for Learning Matters",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}
