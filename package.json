@@ -28,7 +28,10 @@
     "db:seed": "tsx src/db/seed.ts",
     "docs:generate": "tsx src/docs/generate.ts",
     "worker": "node dist/worker.js",
-    "worker:dev": "tsx watch src/worker.ts"
+    "worker:dev": "tsx watch src/worker.ts",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:migrate": "docker compose run --rm migrate"
   },
   "lint-staged": {
     "*.ts": [
