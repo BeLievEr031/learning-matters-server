@@ -1,24 +1,24 @@
 # Stage 1: Install all dependencies (including devDependencies for build)
-FROM node:22-slim AS deps
+FROM node:26-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
 # Stage 2: Build the TypeScript application
-FROM node:22-slim AS build
+FROM node:26-slim AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
 # Stage 3: Install production dependencies only
-FROM node:22-slim AS prod-deps
+FROM node:26-slim AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 # Stage 4: Production runtime
-FROM node:22-slim AS runtime
+FROM node:26-slim AS runtime
 WORKDIR /app
 
 # Install tini for signal handling and curl for container health check
