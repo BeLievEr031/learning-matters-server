@@ -4,38 +4,45 @@ import { logger } from './logger.js';
 
 let isSentryInitialized = false;
 
-if (env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: env.SENTRY_DSN,
-    environment: env.NODE_ENV,
-    release: 'learning-matters-server@1.0.0',
-    beforeSend(event) {
-      // Scrub sensitive authentication and cookie headers
-      if (event.request?.headers) {
-        delete event.request.headers.authorization;
-        delete event.request.headers.cookie;
-        delete event.request.headers['x-metrics-token'];
+export function scrubSentryEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
+  // Scrub sensitive authentication and cookie headers
+  if (event.request?.headers) {
+    delete event.request.headers.authorization;
+    delete event.request.headers.cookie;
+    delete event.request.headers['x-metrics-token'];
+  }
+
+  // Scrub request body if present
+  if (event.request?.data && typeof event.request.data === 'object') {
+    const sensitiveKeys = ['password', 'refreshToken', 'token', 'secret'];
+    const data = { ...event.request.data } as Record<string, unknown>;
+    for (const key of sensitiveKeys) {
+      if (key in data) {
+        data[key] = '[Redacted]';
       }
+    }
+    event.request.data = data;
+  }
 
-      // Scrub request body if present
-      if (event.request?.data && typeof event.request.data === 'object') {
-        const sensitiveKeys = ['password', 'refreshToken', 'token', 'secret'];
-        const data = { ...event.request.data } as Record<string, unknown>;
-        for (const key of sensitiveKeys) {
-          if (key in data) {
-            data[key] = '[Redacted]';
-          }
-        }
-        event.request.data = data;
-      }
-
-      return event;
-    },
-  });
-
-  isSentryInitialized = true;
-  logger.info({ environment: env.NODE_ENV }, 'Sentry error tracking initialized');
+  return event;
 }
+
+export function initSentry(dsn?: string): boolean {
+  if (dsn) {
+    Sentry.init({
+      dsn,
+      environment: env.NODE_ENV,
+      release: 'learning-matters-server@1.0.0',
+      beforeSend: scrubSentryEvent,
+    });
+    isSentryInitialized = true;
+    logger.info({ environment: env.NODE_ENV }, 'Sentry error tracking initialized');
+    return true;
+  }
+  return false;
+}
+
+initSentry(env.SENTRY_DSN);
 
 /**
  * Captures an unhandled exception or 5xx server error to Sentry.
