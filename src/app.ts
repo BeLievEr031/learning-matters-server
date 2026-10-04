@@ -9,6 +9,7 @@ import { errorHandler } from './middleware/error-handler.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
+import { docsRouter } from './docs/docs.routes.js';
 
 /**
  * Creates and configures the Express application.
@@ -57,6 +58,7 @@ export function createApp(): Express {
 
   // 8. Application routes
   app.use(healthRouter);
+  app.use(docsRouter);
   app.use(`${API_V1}/auth`, authRouter);
   app.use(`${API_V1}/users`, usersRouter);
 
