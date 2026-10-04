@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { AppError } from '../lib/app-error.js';
 import { logger } from '../lib/logger.js';
 import { env } from '../config/env.js';
+import { captureException } from '../lib/sentry.js';
 
 export interface ErrorResponsePayload {
   error: {
@@ -74,6 +75,12 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
       },
       'Server error occurred',
     );
+
+    captureException(err, {
+      requestId,
+      path: req.path,
+      method: req.method,
+    });
 
     // In production, never leak internals or stacks for 500 errors
     if (env.NODE_ENV === 'production') {

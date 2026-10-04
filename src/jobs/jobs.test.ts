@@ -5,7 +5,7 @@ import { checkRedisHealth, redis } from '../lib/redis.js';
 import type { Job } from 'bullmq';
 
 describe('Background Jobs & BullMQ Worker', () => {
-  it('creates queue with default retry attempts and exponential backoff', () => {
+  it('creates queue with default retry attempts and exponential backoff', async () => {
     const testQueue = createQueue('test-retry-queue');
 
     expect(testQueue.name).toBe('test-retry-queue');
@@ -14,16 +14,20 @@ describe('Background Jobs & BullMQ Worker', () => {
       type: 'exponential',
       delay: 1000,
     });
+
+    await testQueue.close();
   });
 
-  it('creates worker and attaches completion, failure, and error listeners', () => {
+  it('creates worker and attaches completion, failure, and error listeners', async () => {
     const processor = vi.fn().mockResolvedValue(undefined);
-    const worker = createWorker('test-worker', processor);
+    const worker = createWorker('test-worker', processor, { autorun: false });
 
     expect(worker.name).toBe('test-worker');
     expect(worker.listenerCount('completed')).toBeGreaterThan(0);
     expect(worker.listenerCount('failed')).toBeGreaterThan(0);
     expect(worker.listenerCount('error')).toBeGreaterThan(0);
+
+    await worker.close();
   });
 
   it('processes email job without throwing', async () => {

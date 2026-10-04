@@ -10,6 +10,8 @@ import { healthRouter } from './modules/health/health.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
 import { docsRouter } from './docs/docs.routes.js';
+import { httpMetricsMiddleware } from './lib/metrics.js';
+import { metricsRouter } from './modules/metrics/metrics.routes.js';
 
 /**
  * Creates and configures the Express application.
@@ -37,8 +39,9 @@ export function createApp(): Express {
   // 1. Request ID assignment
   app.use(requestIdMiddleware);
 
-  // 2. HTTP Request Logger
+  // 2. HTTP Request Logger & Metrics
   app.use(httpLoggerMiddleware);
+  app.use(httpMetricsMiddleware);
 
   // 3. Security headers (Helmet)
   app.use(helmetMiddleware);
@@ -58,6 +61,7 @@ export function createApp(): Express {
 
   // 8. Application routes
   app.use(healthRouter);
+  app.use(metricsRouter);
   app.use(docsRouter);
   app.use(`${API_V1}/auth`, authRouter);
   app.use(`${API_V1}/users`, usersRouter);
