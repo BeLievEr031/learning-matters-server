@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { pool } from '../../db/pool.js';
+import { checkRedisHealth } from '../../lib/redis.js';
 import { logger } from '../../lib/logger.js';
 
 export const healthRouter: Router = Router();
@@ -7,7 +8,7 @@ export const healthRouter: Router = Router();
 /**
  * Liveness probe: responds 200 as long as the Node.js process is running.
  */
-healthRouter.get('/health', (_req: Request, res: Response) => {
+healthRouter.get(['/health', '/healthz', '/live'], (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'ok',
     uptime: process.uptime(),
@@ -16,24 +17,49 @@ healthRouter.get('/health', (_req: Request, res: Response) => {
 });
 
 /**
- * Readiness probe: checks if PostgreSQL can execute queries.
- * Returns 200 when ready, 503 if the database is unreachable.
+ * Readiness probe: checks if PostgreSQL and Redis are responsive.
+ * Returns 200 when ready, 503 if any dependent service is down.
  */
 healthRouter.get('/ready', async (_req: Request, res: Response) => {
+  let dbOk = false;
+  let redisOk = false;
+  let dbErr: string | undefined;
+  let redisErr: string | undefined;
+
   try {
     await pool.query('SELECT 1');
-    res.status(200).json({
-      status: 'ready',
-      db: 'up',
-      timestamp: new Date().toISOString(),
-    });
+    dbOk = true;
   } catch (err) {
-    logger.error({ err }, 'Readiness probe failed: database is down');
-    res.status(503).json({
-      status: 'unhealthy',
-      db: 'down',
-      error: err instanceof Error ? err.message : 'Database unreachable',
-      timestamp: new Date().toISOString(),
-    });
+    dbErr = err instanceof Error ? err.message : 'Database unreachable';
   }
+
+  try {
+    redisOk = await checkRedisHealth();
+    if (!redisOk) {
+      redisErr = 'Redis ping failed';
+    }
+  } catch (err) {
+    redisErr = err instanceof Error ? err.message : 'Redis unreachable';
+  }
+
+  const isHealthy = dbOk && redisOk;
+  const statusCode = isHealthy ? 200 : 503;
+
+  if (!isHealthy) {
+    logger.error({ dbErr, redisErr }, 'Readiness probe failed');
+  }
+
+  res.status(statusCode).json({
+    status: isHealthy ? 'ready' : 'unhealthy',
+    db: dbOk ? 'up' : 'down',
+    redis: redisOk ? 'up' : 'down',
+    checks: {
+      database: dbOk ? 'ok' : 'error',
+      redis: redisOk ? 'ok' : 'error',
+    },
+    ...(!isHealthy && {
+      error: [dbErr, redisErr].filter(Boolean).join('; '),
+    }),
+    timestamp: new Date().toISOString(),
+  });
 });
