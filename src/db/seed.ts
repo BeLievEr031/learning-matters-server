@@ -21,24 +21,32 @@ export async function seedDatabase(): Promise<void> {
     parallelism: ARGON2_PARALLELISM,
   });
 
-  // Seed Admin user
+  // Seed Super Admin — school-agnostic (schoolId = NULL)
+  await db
+    .insert(users)
+    .values({
+      email: 'superadmin@learning-matters.com',
+      passwordHash,
+      role: 'super_admin',
+      schoolId: null,
+      firstName: 'Super',
+      lastName: 'Admin',
+      status: 'active',
+      isActive: true,
+    })
+    .onConflictDoNothing({ target: users.email });
+
+  // Seed placeholder School Admin — schoolId will be updated once schools table exists
   await db
     .insert(users)
     .values({
       email: 'admin@learning-matters.com',
       passwordHash,
       role: 'admin',
-      isActive: true,
-    })
-    .onConflictDoNothing({ target: users.email });
-
-  // Seed Regular user
-  await db
-    .insert(users)
-    .values({
-      email: 'user@learning-matters.com',
-      passwordHash,
-      role: 'user',
+      schoolId: null,
+      firstName: 'School',
+      lastName: 'Admin',
+      status: 'active',
       isActive: true,
     })
     .onConflictDoNothing({ target: users.email });
