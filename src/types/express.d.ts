@@ -1,6 +1,9 @@
+import type { UserRole } from '../db/schema/users.js';
+
 export interface AuthenticatedUser {
   id: string;
-  role: 'user' | 'admin';
+  role: UserRole;
+  schoolId: string | null;
 }
 
 declare global {
