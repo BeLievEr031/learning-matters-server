@@ -52,7 +52,7 @@
     "@types/express": "^5.0.6",
     "@types/hpp": "^0.2.7",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^22.0.0",
+    "@types/node": "^26.6.4",
     "@types/pg": "^8.23.1",
     "@types/pino-http": "^6.1.0",
     "@types/supertest": "^7.2.1",
