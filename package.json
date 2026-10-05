@@ -43,7 +43,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@apidevtools/swagger-parser": "^13.0.0",
+    "@apidevtools/swagger-parser": "^13.1.0",
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@eslint/js": "^10.0.1",
