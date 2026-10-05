@@ -47,7 +47,6 @@
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@eslint/js": "^10.0.1",
-    "@rolldown/binding-win32-x64-msvc": "^1.2.12",
     "@testcontainers/postgresql": "^12.2.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
