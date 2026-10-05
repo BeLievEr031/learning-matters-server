@@ -19,14 +19,15 @@ function createRedisStore(prefix: string): RedisStore | undefined {
   });
 }
 
-const globalStore = createRedisStore('global');
+// const globalStore = createRedisStore('global');
 
 export const globalRateLimiter: RequestHandler = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   limit: env.RATE_LIMIT_MAX,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  ...(globalStore && { store: globalStore }),
+  passOnStoreError: true,
+  // ...(globalStore && { store: globalStore }),
   handler: (_req: Request, _res: Response, next: NextFunction) => {
     next(new TooManyRequestsError('Too many requests from this IP, please try again later'));
   },
@@ -43,6 +44,7 @@ export function createAuthRateLimiter(options?: Partial<Options>): RequestHandle
     limit: 10, // 10 attempts
     standardHeaders: 'draft-7',
     legacyHeaders: false,
+    passOnStoreError: true,
     ...(authStore && { store: authStore }),
     handler: (_req: Request, _res: Response, next: NextFunction) => {
       next(

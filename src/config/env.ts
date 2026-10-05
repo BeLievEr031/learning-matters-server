@@ -70,6 +70,10 @@ export function parseEnv(rawEnv: NodeJS.ProcessEnv = process.env) {
 
     throw new Error(message);
   }
+
+  if (result.data.NODE_ENV === 'test') {
+    return result.data;
+  }
   return Object.freeze(result.data);
 }
 

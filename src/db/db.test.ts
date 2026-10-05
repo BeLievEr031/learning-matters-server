@@ -29,16 +29,10 @@ describe('Database Schema & Seed', () => {
 
   it('seed refuses to run when NODE_ENV is production', async () => {
     const originalEnv = env.NODE_ENV;
-    Object.defineProperty(env, 'NODE_ENV', {
-      value: 'production',
-      configurable: true,
-    });
+    (env as { NODE_ENV: string }).NODE_ENV = 'production';
 
     await expect(seedDatabase()).rejects.toThrow('Cannot seed database in production');
 
-    Object.defineProperty(env, 'NODE_ENV', {
-      value: originalEnv,
-      configurable: true,
-    });
+    (env as { NODE_ENV: string }).NODE_ENV = originalEnv;
   });
 });

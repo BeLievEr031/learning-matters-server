@@ -6,7 +6,12 @@ describe('UsersRepository', () => {
   const mockUserSafe = {
     id: '123e4567-e89b-12d3-a456-426614174000',
     email: 'test@example.com',
-    role: 'user' as const,
+    role: 'student' as const,
+    schoolId: null,
+    firstName: null,
+    lastName: null,
+    phone: null,
+    status: 'active',
     isActive: true,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -118,7 +123,7 @@ describe('UsersRepository', () => {
       const created = await usersRepository.create({
         email: 'test@example.com',
         passwordHash: 'hashed-password',
-        role: 'user',
+        role: 'student',
       });
 
       expect(created).toEqual(mockUserSafe);

@@ -28,7 +28,7 @@ describe('TokenService', () => {
       } as never);
 
       const tokens = await tokenService.generateTokens(
-        { id: 'user-123', role: 'user' },
+        { id: 'user-123', role: 'student', schoolId: null },
         'family-abc',
         'Mozilla/5.0',
         '127.0.0.1',
@@ -66,7 +66,12 @@ describe('TokenService', () => {
       vi.spyOn(usersRepository, 'findById').mockResolvedValue({
         id: 'user-123',
         email: 'user@example.com',
-        role: 'user',
+        role: 'student',
+        schoolId: null,
+        firstName: null,
+        lastName: null,
+        phone: null,
+        status: 'active',
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -178,7 +183,12 @@ describe('TokenService', () => {
       vi.spyOn(usersRepository, 'findById').mockResolvedValue({
         id: 'user-inactive',
         email: 'inactive@example.com',
-        role: 'user',
+        role: 'student',
+        schoolId: null,
+        firstName: null,
+        lastName: null,
+        phone: null,
+        status: 'active',
         isActive: false, // inactive!
         createdAt: new Date(),
         updatedAt: new Date(),

@@ -14,7 +14,12 @@ describe('Auth Module & Security', () => {
   const sampleUserSafe: UserSafe = {
     id: '33333333-3333-4333-a333-333333333333',
     email: 'user@learning-matters.com',
-    role: 'user',
+    role: 'student',
+    schoolId: null,
+    firstName: null,
+    lastName: null,
+    phone: null,
+    status: 'active',
     isActive: true,
     createdAt: new Date('2026-01-01T12:00:00Z'),
     updatedAt: new Date('2026-01-01T12:00:00Z'),
@@ -25,6 +30,11 @@ describe('Auth Module & Security', () => {
     id: '44444444-4444-4444-a444-444444444444',
     email: 'admin@learning-matters.com',
     role: 'admin',
+    schoolId: 'school-uuid-1',
+    firstName: null,
+    lastName: null,
+    phone: null,
+    status: 'active',
     isActive: true,
     createdAt: new Date('2026-01-01T12:00:00Z'),
     updatedAt: new Date('2026-01-01T12:00:00Z'),
@@ -215,7 +225,7 @@ describe('Auth Module & Security', () => {
       const app = createApp();
       const revokeAllSpy = vi.spyOn(tokenService, 'revokeAllUserTokens').mockResolvedValue();
       const userToken = jwt.sign(
-        { sub: sampleUserSafe.id, role: 'user', jti: 'jti-1' },
+        { sub: sampleUserSafe.id, role: 'student', schoolId: null, jti: 'jti-1' },
         env.JWT_ACCESS_SECRET,
       );
 
@@ -234,13 +244,43 @@ describe('Auth Module & Security', () => {
     });
   });
 
+  describe('GET /api/v1/auth/me', () => {
+    it('returns the authenticated user profile with 200', async () => {
+      const app = createApp();
+      vi.spyOn(usersRepository, 'findById').mockResolvedValue(sampleUserSafe);
+
+      const token = jwt.sign(
+        {
+          sub: sampleUserSafe.id,
+          role: sampleUserSafe.role,
+          schoolId: sampleUserSafe.schoolId,
+          jti: 'test-jti',
+        },
+        env.JWT_ACCESS_SECRET,
+      );
+
+      const res = await request(app).get('/api/v1/auth/me').set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect((res.body as { user: UserSafe }).user.id).toBe(sampleUserSafe.id);
+      expect((res.body as { user: UserSafe }).user.email).toBe(sampleUserSafe.email);
+      expect((res.body as { user: UserSafe }).user.role).toBe(sampleUserSafe.role);
+    });
+
+    it('rejects unauthenticated request with 401', async () => {
+      const app = createApp();
+      const res = await request(app).get('/api/v1/auth/me');
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe('RBAC and Route Protection', () => {
     it('allows admin to access admin-only routes (GET /api/v1/users)', async () => {
       const app = createApp();
       vi.spyOn(usersRepository, 'list').mockResolvedValue([sampleUserSafe]);
 
       const adminToken = jwt.sign(
-        { sub: sampleAdminSafe.id, role: 'admin', jti: 'admin-jti' },
+        { sub: sampleAdminSafe.id, role: 'admin', schoolId: 'school-uuid-1', jti: 'admin-jti' },
         env.JWT_ACCESS_SECRET,
       );
 
@@ -254,7 +294,7 @@ describe('Auth Module & Security', () => {
     it('rejects regular user from admin-only routes (GET /api/v1/users) with 403 Forbidden', async () => {
       const app = createApp();
       const userToken = jwt.sign(
-        { sub: sampleUserSafe.id, role: 'user', jti: 'user-jti' },
+        { sub: sampleUserSafe.id, role: 'student', schoolId: null, jti: 'user-jti' },
         env.JWT_ACCESS_SECRET,
       );
 
@@ -281,7 +321,7 @@ describe('Auth Module & Security', () => {
     it('rejects regular user from updating another user with 403 Forbidden', async () => {
       const app = createApp();
       const userToken = jwt.sign(
-        { sub: sampleUserSafe.id, role: 'user', jti: 'user-jti' },
+        { sub: sampleUserSafe.id, role: 'student', schoolId: null, jti: 'user-jti' },
         env.JWT_ACCESS_SECRET,
       );
 

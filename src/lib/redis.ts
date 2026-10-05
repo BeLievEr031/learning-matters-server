@@ -4,10 +4,20 @@ import { logger } from './logger.js';
 import { registerCleanupTask } from './cleanup.js';
 
 export function createRedisClient(): Redis {
-  const client = new Redis(env.REDIS_URL, {
+  const REDIS_URL = env.REDIS_URL;
+  const isTls = REDIS_URL.startsWith('rediss://');
+
+  const client = new Redis(REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
+    connectTimeout: 5000,
+    enableOfflineQueue: true,
     lazyConnect: env.NODE_ENV === 'test',
+    ...(isTls && {
+      tls: {
+        rejectUnauthorized: false,
+      },
+    }),
     retryStrategy(times: number) {
       if (env.NODE_ENV === 'test') {
         return null; // Do not retry in test environment

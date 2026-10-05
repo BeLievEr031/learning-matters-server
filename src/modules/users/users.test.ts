@@ -18,7 +18,12 @@ describe('Users Module', () => {
   const sampleUser: UserSafe = {
     id: '11111111-1111-4111-a111-111111111111',
     email: 'test@learning-matters.com',
-    role: 'user',
+    role: 'student',
+    schoolId: null,
+    firstName: null,
+    lastName: null,
+    phone: null,
+    status: 'active',
     isActive: true,
     createdAt: new Date('2026-01-01T12:00:00Z'),
     updatedAt: new Date('2026-01-01T12:00:00Z'),
@@ -26,7 +31,7 @@ describe('Users Module', () => {
   };
 
   const adminToken = jwt.sign(
-    { sub: sampleUser.id, role: 'admin', jti: 'admin-jti' },
+    { sub: sampleUser.id, role: 'admin', schoolId: 'school-uuid-1', jti: 'admin-jti' },
     env.JWT_ACCESS_SECRET,
   );
 
@@ -122,7 +127,7 @@ describe('Users Module', () => {
       vi.spyOn(usersRepository, 'findById').mockResolvedValue(sampleUser);
 
       const userToken = jwt.sign(
-        { sub: sampleUser.id, role: 'user', jti: 'user-jti' },
+        { sub: sampleUser.id, role: 'student', schoolId: null, jti: 'user-jti' },
         env.JWT_ACCESS_SECRET,
       );
 
