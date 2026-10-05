@@ -44,10 +44,14 @@ export class AuthService {
       email: normalizedEmail,
       passwordHash,
       role: input.role,
+      schoolId: input.schoolId ?? null,
+      firstName: input.firstName ?? null,
+      lastName: input.lastName ?? null,
+      phone: input.phone ?? null,
     });
 
     const tokens = await this.tokens.generateTokens(
-      { id: user.id, role: user.role },
+      { id: user.id, role: user.role, schoolId: user.schoolId ?? null },
       undefined,
       userAgent,
       ip,
@@ -83,6 +87,11 @@ export class AuthService {
       id: user.id,
       email: user.email,
       role: user.role,
+      schoolId: user.schoolId ?? null,
+      firstName: user.firstName ?? null,
+      lastName: user.lastName ?? null,
+      phone: user.phone ?? null,
+      status: user.status,
       isActive: user.isActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -90,7 +99,7 @@ export class AuthService {
     };
 
     const tokens = await this.tokens.generateTokens(
-      { id: user.id, role: user.role },
+      { id: user.id, role: user.role, schoolId: user.schoolId ?? null },
       undefined,
       userAgent,
       ip,
@@ -118,6 +127,13 @@ export class AuthService {
    */
   async logoutAll(userId: string): Promise<void> {
     await this.tokens.revokeAllUserTokens(userId);
+  }
+
+  /**
+   * Get the current authenticated user's full profile.
+   */
+  async getMe(userId: string): Promise<UserSafe | null> {
+    return this.userRepo.findById(userId);
   }
 }
 

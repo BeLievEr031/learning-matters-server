@@ -28,6 +28,7 @@ describe('OpenAPI Documentation & Swagger UI', () => {
     expect(paths['/api/v1/auth/refresh']?.post).toBeDefined();
     expect(paths['/api/v1/auth/logout']?.post).toBeDefined();
     expect(paths['/api/v1/auth/logout-all']?.post).toBeDefined();
+    expect(paths['/api/v1/auth/me']?.get).toBeDefined();
 
     // Users
     expect(paths['/api/v1/users/me']?.get).toBeDefined();
@@ -44,6 +45,7 @@ describe('OpenAPI Documentation & Swagger UI', () => {
 
     // Protected endpoints should require bearerAuth
     expect(paths['/api/v1/auth/logout-all']?.post?.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/auth/me']?.get?.security).toEqual([{ bearerAuth: [] }]);
     expect(paths['/api/v1/users/me']?.get?.security).toEqual([{ bearerAuth: [] }]);
     expect(paths['/api/v1/users/me']?.patch?.security).toEqual([{ bearerAuth: [] }]);
     expect(paths['/api/v1/users']?.get?.security).toEqual([{ bearerAuth: [] }]);

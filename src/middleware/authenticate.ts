@@ -2,6 +2,16 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { UnauthorizedError } from '../lib/app-error.js';
+import type { UserRole } from '../db/schema/users.js';
+
+const VALID_ROLES: ReadonlySet<string> = new Set<UserRole>([
+  'super_admin',
+  'admin',
+  'principal',
+  'class_teacher',
+  'teacher',
+  'student',
+]);
 
 export function authenticate(req: Request, _res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
@@ -19,13 +29,16 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
     }
 
     const role: unknown = decoded.role;
-    if (role !== 'user' && role !== 'admin') {
+    if (typeof role !== 'string' || !VALID_ROLES.has(role)) {
       throw new UnauthorizedError('Invalid access token payload');
     }
 
+    const schoolId: unknown = decoded.schoolId;
+
     req.user = {
       id: decoded.sub,
-      role,
+      role: role as UserRole,
+      schoolId: typeof schoolId === 'string' ? schoolId : null,
     };
 
     next();

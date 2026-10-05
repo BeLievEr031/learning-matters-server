@@ -1,6 +1,6 @@
 import { eq, isNull, and, or, lt, desc } from 'drizzle-orm';
 import { db } from '../../db/pool.js';
-import { users, type User } from '../../db/schema/users.js';
+import { users, type User, type UserRole } from '../../db/schema/users.js';
 import type { CursorPayload } from '../../lib/pagination.js';
 
 export type UserSafe = Omit<User, 'passwordHash'>;
@@ -9,6 +9,11 @@ export const userSafeColumns = {
   id: users.id,
   email: users.email,
   role: users.role,
+  schoolId: users.schoolId,
+  firstName: users.firstName,
+  lastName: users.lastName,
+  phone: users.phone,
+  status: users.status,
   isActive: users.isActive,
   createdAt: users.createdAt,
   updatedAt: users.updatedAt,
@@ -17,7 +22,12 @@ export const userSafeColumns = {
 
 export interface UpdateUserData {
   email?: string | undefined;
-  role?: ('user' | 'admin') | undefined;
+  role?: UserRole | undefined;
+  schoolId?: string | null | undefined;
+  firstName?: string | null | undefined;
+  lastName?: string | null | undefined;
+  phone?: string | null | undefined;
+  status?: string | undefined;
   isActive?: boolean | undefined;
 }
 
@@ -77,7 +87,11 @@ export class UsersRepository {
   async create(data: {
     email: string;
     passwordHash: string;
-    role?: 'user' | 'admin';
+    role?: UserRole;
+    schoolId?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    phone?: string | null;
   }): Promise<UserSafe> {
     const rows = await db
       .insert(users)
@@ -85,6 +99,10 @@ export class UsersRepository {
         email: data.email.toLowerCase(),
         passwordHash: data.passwordHash,
         ...(data.role && { role: data.role }),
+        ...(data.schoolId !== undefined && { schoolId: data.schoolId }),
+        ...(data.firstName !== undefined && { firstName: data.firstName }),
+        ...(data.lastName !== undefined && { lastName: data.lastName }),
+        ...(data.phone !== undefined && { phone: data.phone }),
       })
       .returning(userSafeColumns);
 
@@ -106,6 +124,21 @@ export class UsersRepository {
     }
     if (data.role !== undefined) {
       updateValues.role = data.role;
+    }
+    if (data.schoolId !== undefined) {
+      updateValues.schoolId = data.schoolId;
+    }
+    if (data.firstName !== undefined) {
+      updateValues.firstName = data.firstName;
+    }
+    if (data.lastName !== undefined) {
+      updateValues.lastName = data.lastName;
+    }
+    if (data.phone !== undefined) {
+      updateValues.phone = data.phone;
+    }
+    if (data.status !== undefined) {
+      updateValues.status = data.status;
     }
     if (data.isActive !== undefined) {
       updateValues.isActive = data.isActive;

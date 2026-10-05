@@ -60,7 +60,7 @@ export class UsersService {
       throw new NotFoundError('User not found');
     }
 
-    if (input.role && callerRole !== 'admin') {
+    if (input.role && callerRole !== 'admin' && callerRole !== 'super_admin') {
       throw new ForbiddenError('Only administrators can change user roles');
     }
 

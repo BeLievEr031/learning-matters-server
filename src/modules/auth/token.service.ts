@@ -6,6 +6,7 @@ import { db } from '../../db/pool.js';
 import { refreshTokens } from '../../db/schema/refresh-tokens.js';
 import { usersRepository } from '../users/users.repository.js';
 import { UnauthorizedError } from '../../lib/app-error.js';
+import type { UserRole } from '../../db/schema/users.js';
 
 export interface TokenPair {
   accessToken: string;
@@ -14,7 +15,8 @@ export interface TokenPair {
 
 export interface AccessTokenPayload {
   sub: string;
-  role: 'user' | 'admin';
+  role: UserRole;
+  schoolId: string | null;
   jti: string;
 }
 
@@ -51,7 +53,7 @@ export class TokenService {
    * Generates a short-lived access JWT and a rotating opaque refresh token stored as SHA-256.
    */
   async generateTokens(
-    user: { id: string; role: 'user' | 'admin' },
+    user: { id: string; role: UserRole; schoolId?: string | null },
     familyId: string = randomUUID(),
     userAgent?: string,
     ip?: string,
@@ -60,6 +62,7 @@ export class TokenService {
     const payload: AccessTokenPayload = {
       sub: user.id,
       role: user.role,
+      schoolId: user.schoolId ?? null,
       jti,
     };
 
@@ -141,7 +144,12 @@ export class TokenService {
       .where(eq(refreshTokens.id, record.id));
 
     // Issue new tokens maintaining the existing family_id
-    return this.generateTokens({ id: user.id, role: user.role }, record.familyId, userAgent, ip);
+    return this.generateTokens(
+      { id: user.id, role: user.role, schoolId: user.schoolId ?? null },
+      record.familyId,
+      userAgent,
+      ip,
+    );
   }
 
   /**

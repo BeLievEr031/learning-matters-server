@@ -1,15 +1,16 @@
 import { z } from 'zod';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../../config/constants.js';
+import { USER_ROLES } from '../auth/auth.schemas.js';
 
 export const createUserSchema = z.object({
   email: z.email(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum(['user', 'admin']).default('user'),
+  role: z.enum(USER_ROLES).default('student'),
 });
 
 export const updateUserSchema = z.object({
   email: z.email().optional(),
-  role: z.enum(['user', 'admin']).optional(),
+  role: z.enum(USER_ROLES).optional(),
   isActive: z.boolean().optional(),
 });
 

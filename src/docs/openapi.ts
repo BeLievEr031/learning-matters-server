@@ -50,11 +50,20 @@ export const PageInfoSchema = z
 // ---------------------------------------------------------------------------
 // User Schemas
 // ---------------------------------------------------------------------------
+export const UserRoleSchema = z
+  .enum(['super_admin', 'admin', 'principal', 'class_teacher', 'teacher', 'student'])
+  .openapi('UserRole');
+
 export const UserSafeSchema = z
   .object({
     id: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
     email: z.email().openapi({ example: 'user@learning-matters.com' }),
-    role: z.enum(['user', 'admin']).openapi({ example: 'user' }),
+    role: UserRoleSchema.openapi({ example: 'student' }),
+    schoolId: z.uuid().nullable().openapi({ example: '22222222-2222-4222-a222-222222222222' }),
+    firstName: z.string().nullable().openapi({ example: 'John' }),
+    lastName: z.string().nullable().openapi({ example: 'Doe' }),
+    phone: z.string().nullable().openapi({ example: '+1234567890' }),
+    status: z.string().openapi({ example: 'active' }),
     isActive: z.boolean().openapi({ example: true }),
     createdAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
     updatedAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
@@ -65,15 +74,24 @@ export const UserSafeSchema = z
 export const CreateUserRequestSchema = z
   .object({
     email: z.email().openapi({ example: 'newuser@learning-matters.com' }),
-    password: z.string().min(8).openapi({ example: 'SecurePassword123!' }),
-    role: z.enum(['user', 'admin']).default('user').openapi({ example: 'user' }),
+    password: z.string().min(12).openapi({ example: 'SecurePassword123!' }),
+    role: UserRoleSchema.default('student').openapi({ example: 'student' }),
+    schoolId: z.uuid().optional().openapi({ example: '22222222-2222-4222-a222-222222222222' }),
+    firstName: z.string().optional().openapi({ example: 'John' }),
+    lastName: z.string().optional().openapi({ example: 'Doe' }),
+    phone: z.string().optional().openapi({ example: '+1234567890' }),
   })
   .openapi('CreateUserRequest');
 
 export const UpdateUserRequestSchema = z
   .object({
     email: z.email().optional().openapi({ example: 'updated@learning-matters.com' }),
-    role: z.enum(['user', 'admin']).optional().openapi({ example: 'admin' }),
+    role: UserRoleSchema.optional().openapi({ example: 'teacher' }),
+    schoolId: z.uuid().optional().openapi({ example: '22222222-2222-4222-a222-222222222222' }),
+    firstName: z.string().optional().openapi({ example: 'John' }),
+    lastName: z.string().optional().openapi({ example: 'Doe' }),
+    phone: z.string().optional().openapi({ example: '+1234567890' }),
+    status: z.string().optional().openapi({ example: 'active' }),
     isActive: z.boolean().optional().openapi({ example: true }),
   })
   .openapi('UpdateUserRequest');
@@ -99,7 +117,11 @@ export const RegisterRequestSchema = z
   .object({
     email: z.email().openapi({ example: 'student@learning-matters.com' }),
     password: z.string().min(12).openapi({ example: 'SuperSecure123!' }),
-    role: z.enum(['user', 'admin']).default('user').openapi({ example: 'user' }),
+    role: UserRoleSchema.default('student').openapi({ example: 'student' }),
+    schoolId: z.uuid().optional().openapi({ example: '22222222-2222-4222-a222-222222222222' }),
+    firstName: z.string().optional().openapi({ example: 'Jane' }),
+    lastName: z.string().optional().openapi({ example: 'Doe' }),
+    phone: z.string().optional().openapi({ example: '+1234567890' }),
   })
   .openapi('RegisterRequest');
 
@@ -363,6 +385,33 @@ registry.registerPath({
     },
     401: {
       description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/auth/me',
+  tags: ['Auth'],
+  summary: 'Get current authenticated user profile',
+  description: 'Returns the full profile of the authenticated user based on the access token.',
+  security: [{ [bearerAuth.name]: [] }],
+  responses: {
+    200: {
+      description: 'Current user profile',
+      content: {
+        'application/json': {
+          schema: z.object({ user: UserSafeSchema }),
+        },
+      },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'User not found',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
   },

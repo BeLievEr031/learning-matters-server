@@ -23,3 +23,6 @@ authRouter.post('/refresh', authLimiter, validate({ body: refreshSchema }), auth
 authRouter.post('/logout', validate({ body: logoutSchema }), authController.logout);
 
 authRouter.post('/logout-all', authenticate, authController.logoutAll);
+
+// GET /api/v1/auth/me — returns the current authenticated user's profile
+authRouter.get('/me', authenticate, authController.me);

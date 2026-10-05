@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+export const USER_ROLES = [
+  'super_admin',
+  'admin',
+  'principal',
+  'class_teacher',
+  'teacher',
+  'student',
+] as const;
+
 export const passwordSchema = z
   .string()
   .min(12, 'Password must be at least 12 characters')
@@ -10,7 +19,11 @@ export const passwordSchema = z
 export const registerSchema = z.object({
   email: z.email(),
   password: passwordSchema,
-  role: z.enum(['user', 'admin']).default('user'),
+  role: z.enum(USER_ROLES).default('student'),
+  schoolId: z.uuid().optional(),
+  firstName: z.string().min(1).max(100).optional(),
+  lastName: z.string().min(1).max(100).optional(),
+  phone: z.string().max(30).optional(),
 });
 
 export const loginSchema = z.object({

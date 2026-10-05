@@ -25,7 +25,7 @@ usersRouter.patch(
 usersRouter.get(
   '/',
   authenticate,
-  authorize('admin'),
+  authorize('super_admin', 'admin'),
   validate({ query: listUsersQuerySchema }),
   usersController.listUsers,
 );
@@ -52,7 +52,7 @@ usersRouter.patch(
 usersRouter.delete(
   '/:id',
   authenticate,
-  authorize('admin'),
+  authorize('super_admin', 'admin'),
   validate({ params: userIdParamSchema }),
   usersController.deleteUser,
 );
