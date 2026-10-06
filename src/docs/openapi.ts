@@ -97,6 +97,65 @@ export const UpdateUserRequestSchema = z
   .openapi('UpdateUserRequest');
 
 // ---------------------------------------------------------------------------
+// School Schemas
+// ---------------------------------------------------------------------------
+export const SchoolStatusSchema = z
+  .enum(['active', 'inactive', 'suspended'])
+  .openapi('SchoolStatus');
+
+export const SchoolSchema = z
+  .object({
+    id: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    name: z.string().openapi({ example: 'ABC International School' }),
+    code: z.string().openapi({ example: 'ABC001' }),
+    address: z.string().nullable().openapi({ example: '42 Knowledge Way' }),
+    city: z.string().nullable().openapi({ example: 'New Delhi' }),
+    state: z.string().nullable().openapi({ example: 'Delhi' }),
+    country: z.string().nullable().openapi({ example: 'India' }),
+    phone: z.string().nullable().openapi({ example: '+919876543210' }),
+    email: z.email().nullable().openapi({ example: 'contact@abcschool.edu' }),
+    website: z.url().nullable().openapi({ example: 'https://abcschool.edu' }),
+    logoUrl: z.url().nullable().openapi({ example: 'https://abcschool.edu/logo.png' }),
+    status: SchoolStatusSchema.openapi({ example: 'active' }),
+    createdAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    updatedAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    deletedAt: z.iso.datetime().nullable().openapi({ example: null }),
+  })
+  .openapi('School');
+
+export const CreateSchoolRequestSchema = z
+  .object({
+    name: z.string().min(1).max(255).openapi({ example: 'ABC International School' }),
+    code: z.string().min(1).max(50).openapi({ example: 'ABC001' }),
+    address: z.string().optional().openapi({ example: '42 Knowledge Way' }),
+    city: z.string().optional().openapi({ example: 'New Delhi' }),
+    state: z.string().optional().openapi({ example: 'Delhi' }),
+    country: z.string().optional().openapi({ example: 'India' }),
+    phone: z.string().optional().openapi({ example: '+919876543210' }),
+    email: z.email().optional().openapi({ example: 'contact@abcschool.edu' }),
+    website: z.url().optional().openapi({ example: 'https://abcschool.edu' }),
+    logoUrl: z.url().optional().openapi({ example: 'https://abcschool.edu/logo.png' }),
+    status: SchoolStatusSchema.default('active').openapi({ example: 'active' }),
+  })
+  .openapi('CreateSchoolRequest');
+
+export const UpdateSchoolRequestSchema = z
+  .object({
+    name: z.string().min(1).max(255).optional().openapi({ example: 'ABC International Academy' }),
+    code: z.string().min(1).max(50).optional().openapi({ example: 'ABC002' }),
+    address: z.string().nullable().optional().openapi({ example: '42 Knowledge Way' }),
+    city: z.string().nullable().optional().openapi({ example: 'New Delhi' }),
+    state: z.string().nullable().openapi({ example: 'Delhi' }),
+    country: z.string().nullable().optional().openapi({ example: 'India' }),
+    phone: z.string().nullable().optional().openapi({ example: '+919876543210' }),
+    email: z.email().nullable().optional().openapi({ example: 'contact@abcschool.edu' }),
+    website: z.url().nullable().optional().openapi({ example: 'https://abcschool.edu' }),
+    logoUrl: z.url().nullable().optional().openapi({ example: 'https://abcschool.edu/logo.png' }),
+    status: SchoolStatusSchema.optional().openapi({ example: 'active' }),
+  })
+  .openapi('UpdateSchoolRequest');
+
+// ---------------------------------------------------------------------------
 // Auth Schemas
 // ---------------------------------------------------------------------------
 export const TokenPairSchema = z
@@ -678,6 +737,222 @@ registry.registerPath({
     },
     404: {
       description: 'User not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Schools Endpoints
+// ---------------------------------------------------------------------------
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/schools',
+  tags: ['Schools'],
+  summary: 'Create a new school (Super Admin only)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: CreateSchoolRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: 'School created successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: SchoolSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'School with this code already exists',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/schools',
+  tags: ['Schools'],
+  summary: 'List schools with pagination and filtering (Super Admin only)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({
+      limit: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_PAGE_SIZE)
+        .default(DEFAULT_PAGE_SIZE)
+        .openapi({ example: 20 }),
+      cursor: z.string().optional().openapi({ example: 'ZXhhbXBsZQ==' }),
+      status: SchoolStatusSchema.optional().openapi({ example: 'active' }),
+      search: z.string().optional().openapi({ example: 'Greenwood' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Paginated schools list',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.array(SchoolSchema),
+            pageInfo: PageInfoSchema,
+          }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/schools/{schoolId}',
+  tags: ['Schools'],
+  summary: 'Get school by ID (Super Admin or own-school Admin/Principal)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'School details',
+      content: {
+        'application/json': {
+          schema: z.object({ data: SchoolSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid UUID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Insufficient permissions or wrong school scope',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'School not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/schools/{schoolId}',
+  tags: ['Schools'],
+  summary: 'Update school by ID (Super Admin only)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    }),
+    body: {
+      content: {
+        'application/json': {
+          schema: UpdateSchoolRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'School updated successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: SchoolSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'School not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'School with this code already exists',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/schools/{schoolId}',
+  tags: ['Schools'],
+  summary: 'Soft-delete school by ID (Super Admin only)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    }),
+  },
+  responses: {
+    204: {
+      description: 'School soft-deleted successfully',
+    },
+    400: {
+      description: 'Invalid UUID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'School not found',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
   },

@@ -97,12 +97,32 @@
             "example": "user@learning-matters.com"
           },
           "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "schoolId": {
             "type": "string",
-            "enum": [
-              "user",
-              "admin"
-            ],
-            "example": "user"
+            "nullable": true,
+            "format": "uuid",
+            "example": "22222222-2222-4222-a222-222222222222"
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true,
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Doe"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "+1234567890"
+          },
+          "status": {
+            "type": "string",
+            "example": "active"
           },
           "isActive": {
             "type": "boolean",
@@ -129,11 +149,28 @@
           "id",
           "email",
           "role",
+          "schoolId",
+          "firstName",
+          "lastName",
+          "phone",
+          "status",
           "isActive",
           "createdAt",
           "updatedAt",
           "deletedAt"
         ]
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": [
+          "super_admin",
+          "admin",
+          "principal",
+          "class_teacher",
+          "teacher",
+          "student"
+        ],
+        "example": "student"
       },
       "TokenPair": {
         "type": "object",
@@ -166,13 +203,24 @@
             "example": "SuperSecure123!"
           },
           "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "schoolId": {
             "type": "string",
-            "enum": [
-              "user",
-              "admin"
-            ],
-            "default": "user",
-            "example": "user"
+            "format": "uuid",
+            "example": "22222222-2222-4222-a222-222222222222"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "Jane"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+1234567890"
           }
         },
         "required": [
@@ -245,12 +293,35 @@
             "example": "updated@learning-matters.com"
           },
           "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              },
+              {
+                "example": "teacher"
+              }
+            ]
+          },
+          "schoolId": {
             "type": "string",
-            "enum": [
-              "user",
-              "admin"
-            ],
-            "example": "admin"
+            "format": "uuid",
+            "example": "22222222-2222-4222-a222-222222222222"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+1234567890"
+          },
+          "status": {
+            "type": "string",
+            "example": "active"
           },
           "isActive": {
             "type": "boolean",
@@ -286,22 +357,264 @@
           },
           "password": {
             "type": "string",
-            "minLength": 8,
+            "minLength": 12,
             "example": "SecurePassword123!"
           },
           "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "schoolId": {
             "type": "string",
-            "enum": [
-              "user",
-              "admin"
-            ],
-            "default": "user",
-            "example": "user"
+            "format": "uuid",
+            "example": "22222222-2222-4222-a222-222222222222"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+1234567890"
           }
         },
         "required": [
           "email",
           "password"
+        ]
+      },
+      "School": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "11111111-1111-4111-a111-111111111111"
+          },
+          "name": {
+            "type": "string",
+            "example": "ABC International School"
+          },
+          "code": {
+            "type": "string",
+            "example": "ABC001"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true,
+            "example": "42 Knowledge Way"
+          },
+          "city": {
+            "type": "string",
+            "nullable": true,
+            "example": "New Delhi"
+          },
+          "state": {
+            "type": "string",
+            "nullable": true,
+            "example": "Delhi"
+          },
+          "country": {
+            "type": "string",
+            "nullable": true,
+            "example": "India"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "+919876543210"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "format": "email",
+            "example": "contact@abcschool.edu"
+          },
+          "website": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "https://abcschool.edu"
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "https://abcschool.edu/logo.png"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SchoolStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T12:00:00.000Z"
+          },
+          "deletedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": null
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "code",
+          "address",
+          "city",
+          "state",
+          "country",
+          "phone",
+          "email",
+          "website",
+          "logoUrl",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "deletedAt"
+        ]
+      },
+      "SchoolStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "inactive",
+          "suspended"
+        ],
+        "example": "active"
+      },
+      "CreateSchoolRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "example": "ABC International School"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "example": "ABC001"
+          },
+          "address": {
+            "type": "string",
+            "example": "42 Knowledge Way"
+          },
+          "city": {
+            "type": "string",
+            "example": "New Delhi"
+          },
+          "state": {
+            "type": "string",
+            "example": "Delhi"
+          },
+          "country": {
+            "type": "string",
+            "example": "India"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+919876543210"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "contact@abcschool.edu"
+          },
+          "website": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://abcschool.edu"
+          },
+          "logoUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://abcschool.edu/logo.png"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SchoolStatus"
+          }
+        },
+        "required": [
+          "name",
+          "code"
+        ]
+      },
+      "UpdateSchoolRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "example": "ABC International Academy"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "example": "ABC002"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true,
+            "example": "42 Knowledge Way"
+          },
+          "city": {
+            "type": "string",
+            "nullable": true,
+            "example": "New Delhi"
+          },
+          "state": {
+            "type": "string",
+            "nullable": true,
+            "example": "Delhi"
+          },
+          "country": {
+            "type": "string",
+            "nullable": true,
+            "example": "India"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "+919876543210"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "format": "email",
+            "example": "contact@abcschool.edu"
+          },
+          "website": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "https://abcschool.edu"
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "https://abcschool.edu/logo.png"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SchoolStatus"
+          }
+        },
+        "required": [
+          "state"
         ]
       }
     },
@@ -655,6 +968,60 @@
           },
           "401": {
             "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get current authenticated user profile",
+        "description": "Returns the full profile of the authenticated user based on the access token.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  },
+                  "required": [
+                    "user"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1171,6 +1538,451 @@
           },
           "404": {
             "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schools": {
+      "post": {
+        "tags": [
+          "Schools"
+        ],
+        "summary": "Create a new school (Super Admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSchoolRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "School created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/School"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "School with this code already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Schools"
+        ],
+        "summary": "List schools with pagination and filtering (Super Admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "ZXhhbXBsZQ=="
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/SchoolStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "Greenwood"
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated schools list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/School"
+                      }
+                    },
+                    "pageInfo": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "pageInfo"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schools/{schoolId}": {
+      "get": {
+        "tags": [
+          "Schools"
+        ],
+        "summary": "Get school by ID (Super Admin or own-school Admin/Principal)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-a111-111111111111"
+            },
+            "required": true,
+            "name": "schoolId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "School details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/School"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid UUID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Insufficient permissions or wrong school scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "School not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Schools"
+        ],
+        "summary": "Update school by ID (Super Admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-a111-111111111111"
+            },
+            "required": true,
+            "name": "schoolId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSchoolRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "School updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/School"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "School not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "School with this code already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Schools"
+        ],
+        "summary": "Soft-delete school by ID (Super Admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-a111-111111111111"
+            },
+            "required": true,
+            "name": "schoolId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "School soft-deleted successfully"
+          },
+          "400": {
+            "description": "Invalid UUID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "School not found",
             "content": {
               "application/json": {
                 "schema": {
