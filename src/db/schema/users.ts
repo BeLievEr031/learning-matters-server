@@ -9,6 +9,7 @@ import {
   index,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { schools } from './schools.js';
 
 export const userRoleEnum = pgEnum('user_role', [
   'super_admin',
@@ -27,7 +28,7 @@ export const users = pgTable(
     passwordHash: text('password_hash').notNull(),
     role: userRoleEnum('role').default('student').notNull(),
     // school_id is nullable: super_admin has NULL, all other roles reference a school
-    schoolId: uuid('school_id'),
+    schoolId: uuid('school_id').references(() => schools.id, { onDelete: 'set null' }),
     firstName: text('first_name'),
     lastName: text('last_name'),
     phone: text('phone'),
