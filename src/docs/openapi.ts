@@ -156,6 +156,57 @@ export const UpdateSchoolRequestSchema = z
   .openapi('UpdateSchoolRequest');
 
 // ---------------------------------------------------------------------------
+// Board Schemas
+// ---------------------------------------------------------------------------
+export const BoardStatusSchema = z.enum(['active', 'inactive', 'archived']).openapi('BoardStatus');
+
+export const BoardSchema = z
+  .object({
+    id: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    name: z.string().openapi({ example: 'Central Board of Secondary Education' }),
+    code: z.string().openapi({ example: 'CBSE' }),
+    description: z.string().nullable().openapi({ example: 'National education curriculum board' }),
+    status: BoardStatusSchema.openapi({ example: 'active' }),
+    createdAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    updatedAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    deletedAt: z.iso.datetime().nullable().openapi({ example: null }),
+  })
+  .openapi('Board');
+
+export const CreateBoardRequestSchema = z
+  .object({
+    name: z.string().min(1).max(255).openapi({ example: 'Central Board of Secondary Education' }),
+    code: z.string().min(1).max(50).openapi({ example: 'CBSE' }),
+    description: z
+      .string()
+      .max(1000)
+      .optional()
+      .openapi({ example: 'National education curriculum board' }),
+    status: BoardStatusSchema.default('active').openapi({ example: 'active' }),
+  })
+  .openapi('CreateBoardRequest');
+
+export const UpdateBoardRequestSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1)
+      .max(255)
+      .optional()
+      .openapi({ example: 'Indian Certificate of Secondary Education' }),
+    code: z.string().min(1).max(50).optional().openapi({ example: 'ICSE' }),
+    description: z
+      .string()
+      .max(1000)
+      .nullable()
+      .optional()
+      .openapi({ example: 'National secondary curriculum' }),
+    status: BoardStatusSchema.optional().openapi({ example: 'active' }),
+  })
+  .openapi('UpdateBoardRequest');
+
+// ---------------------------------------------------------------------------
 // Auth Schemas
 // ---------------------------------------------------------------------------
 export const TokenPairSchema = z
@@ -953,6 +1004,238 @@ registry.registerPath({
     },
     404: {
       description: 'School not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Board Endpoints
+// ---------------------------------------------------------------------------
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/schools/{schoolId}/boards',
+  tags: ['Boards'],
+  summary: 'Create board in school (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: CreateBoardRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: 'Board created successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: BoardSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'School not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Board with this code already exists for this school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/schools/{schoolId}/boards',
+  tags: ['Boards'],
+  summary: 'List boards in school (Super Admin, School Admin, or Principal)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    }),
+    query: z.object({
+      limit: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_PAGE_SIZE)
+        .default(DEFAULT_PAGE_SIZE)
+        .optional(),
+      cursor: z.string().optional().openapi({ example: 'ZXhhbXBsZQ==' }),
+      status: BoardStatusSchema.optional(),
+      search: z.string().optional().openapi({ example: 'CBSE' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Paginated list of boards for the school',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.array(BoardSchema),
+            pageInfo: PageInfoSchema,
+          }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid query parameters or school ID',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school access only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'School not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/boards/{boardId}',
+  tags: ['Boards'],
+  summary: 'Get board by ID (Super Admin, School Admin, or Principal)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      boardId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Board details retrieved successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: BoardSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid board ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Access to this board is not allowed',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Board not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/boards/{boardId}',
+  tags: ['Boards'],
+  summary: 'Update board by ID (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      boardId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: UpdateBoardRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Board updated successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: BoardSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error or invalid board ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Board not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Board with this code already exists for this school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/boards/{boardId}',
+  tags: ['Boards'],
+  summary: 'Soft-delete board by ID (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      boardId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    }),
+  },
+  responses: {
+    204: {
+      description: 'Board soft-deleted successfully',
+    },
+    400: {
+      description: 'Invalid board ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Board not found',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
   },
