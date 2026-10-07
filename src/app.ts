@@ -10,6 +10,7 @@ import { healthRouter } from './modules/health/health.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
 import { schoolsRouter } from './modules/schools/schools.routes.js';
+import { boardsRouter } from './modules/boards/boards.routes.js';
 import { docsRouter } from './docs/docs.routes.js';
 import { httpMetricsMiddleware } from './lib/metrics.js';
 import { metricsRouter } from './modules/metrics/metrics.routes.js';
@@ -67,6 +68,7 @@ export function createApp(): Express {
   app.use(`${API_V1}/auth`, authRouter);
   app.use(`${API_V1}/users`, usersRouter);
   app.use(`${API_V1}/schools`, schoolsRouter);
+  app.use(`${API_V1}/boards`, boardsRouter);
 
   // 9. 404 handler for unmatched routes
   app.use(notFoundHandler);
