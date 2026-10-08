@@ -52,6 +52,13 @@ describe('OpenAPI Documentation & Swagger UI', () => {
     expect(paths['/api/v1/boards/{boardId}']?.get).toBeDefined();
     expect(paths['/api/v1/boards/{boardId}']?.patch).toBeDefined();
     expect(paths['/api/v1/boards/{boardId}']?.delete).toBeDefined();
+
+    // Grades
+    expect(paths['/api/v1/boards/{boardId}/grades']?.post).toBeDefined();
+    expect(paths['/api/v1/boards/{boardId}/grades']?.get).toBeDefined();
+    expect(paths['/api/v1/grades/{gradeId}']?.get).toBeDefined();
+    expect(paths['/api/v1/grades/{gradeId}']?.patch).toBeDefined();
+    expect(paths['/api/v1/grades/{gradeId}']?.delete).toBeDefined();
   });
 
   it('documents bearerAuth security on protected endpoints', () => {
@@ -72,6 +79,11 @@ describe('OpenAPI Documentation & Swagger UI', () => {
     expect(paths['/api/v1/boards/{boardId}']?.get?.security).toEqual([{ bearerAuth: [] }]);
     expect(paths['/api/v1/boards/{boardId}']?.patch?.security).toEqual([{ bearerAuth: [] }]);
     expect(paths['/api/v1/boards/{boardId}']?.delete?.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/boards/{boardId}/grades']?.post?.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/boards/{boardId}/grades']?.get?.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/grades/{gradeId}']?.get?.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/grades/{gradeId}']?.patch?.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/grades/{gradeId}']?.delete?.security).toEqual([{ bearerAuth: [] }]);
 
     // Public endpoints should NOT have security defined
     expect(paths['/api/v1/auth/login']?.post?.security).toBeUndefined();

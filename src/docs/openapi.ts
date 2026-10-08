@@ -207,6 +207,55 @@ export const UpdateBoardRequestSchema = z
   .openapi('UpdateBoardRequest');
 
 // ---------------------------------------------------------------------------
+// Grade Schemas
+// ---------------------------------------------------------------------------
+export const GradeStatusSchema = z.enum(['active', 'inactive', 'archived']).openapi('GradeStatus');
+
+export const GradeSchema = z
+  .object({
+    id: z.uuid().openapi({ example: '44444444-4444-4444-a444-444444444444' }),
+    schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    boardId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    name: z.string().openapi({ example: 'Grade 10 - Section A' }),
+    code: z.string().openapi({ example: 'G10-A' }),
+    gradeNumber: z.number().int().openapi({ example: 10 }),
+    section: z.string().nullable().openapi({ example: 'A' }),
+    capacity: z.number().int().nullable().openapi({ example: 40 }),
+    status: GradeStatusSchema.openapi({ example: 'active' }),
+    createdAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    updatedAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    deletedAt: z.iso.datetime().nullable().openapi({ example: null }),
+  })
+  .openapi('Grade');
+
+export const CreateGradeRequestSchema = z
+  .object({
+    name: z.string().min(1).max(255).openapi({ example: 'Grade 10 - Section A' }),
+    code: z.string().min(1).max(50).openapi({ example: 'G10-A' }),
+    gradeNumber: z.number().int().min(0).openapi({ example: 10 }),
+    section: z.string().max(50).optional().openapi({ example: 'A' }),
+    capacity: z.number().int().min(1).optional().openapi({ example: 40 }),
+    status: GradeStatusSchema.default('active').openapi({ example: 'active' }),
+  })
+  .openapi('CreateGradeRequest');
+
+export const UpdateGradeRequestSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1)
+      .max(255)
+      .optional()
+      .openapi({ example: 'Grade 10 - Section A (Senior)' }),
+    code: z.string().min(1).max(50).optional().openapi({ example: 'G10-A-SR' }),
+    gradeNumber: z.number().int().min(0).optional().openapi({ example: 10 }),
+    section: z.string().max(50).nullable().optional().openapi({ example: 'A' }),
+    capacity: z.number().int().min(1).nullable().optional().openapi({ example: 45 }),
+    status: GradeStatusSchema.optional().openapi({ example: 'active' }),
+  })
+  .openapi('UpdateGradeRequest');
+
+// ---------------------------------------------------------------------------
 // Auth Schemas
 // ---------------------------------------------------------------------------
 export const TokenPairSchema = z
@@ -1236,6 +1285,244 @@ registry.registerPath({
     },
     404: {
       description: 'Board not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Grade Endpoints
+// ---------------------------------------------------------------------------
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/boards/{boardId}/grades',
+  tags: ['Grades'],
+  summary: 'Create grade under a board (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      boardId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: CreateGradeRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: 'Grade created successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: GradeSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Board not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Grade with this number and section already exists for this board',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/boards/{boardId}/grades',
+  tags: ['Grades'],
+  summary: 'List grades under a board (Super Admin, School Admin, Principal, or Class Teacher)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      boardId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    }),
+    query: z.object({
+      limit: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_PAGE_SIZE)
+        .default(DEFAULT_PAGE_SIZE)
+        .optional(),
+      cursor: z.string().optional().openapi({ example: 'ZXhhbXBsZQ==' }),
+      status: GradeStatusSchema.optional(),
+      section: z.string().optional().openapi({ example: 'A' }),
+      gradeNumber: z.coerce.number().int().optional().openapi({ example: 10 }),
+      search: z.string().optional().openapi({ example: 'Grade 10' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Paginated list of grades for the board',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.array(GradeSchema),
+            pageInfo: PageInfoSchema,
+          }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid query parameters or board ID',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school access only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Board not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/grades/{gradeId}',
+  tags: ['Grades'],
+  summary: 'Get grade by ID (Super Admin, School Admin, Principal, or Class Teacher)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      gradeId: z.uuid().openapi({ example: '44444444-4444-4444-a444-444444444444' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Grade details retrieved successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: GradeSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid grade ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Access to this grade is not allowed',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Grade not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/grades/{gradeId}',
+  tags: ['Grades'],
+  summary: 'Update grade by ID (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      gradeId: z.uuid().openapi({ example: '44444444-4444-4444-a444-444444444444' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: UpdateGradeRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Grade updated successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: GradeSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error or invalid grade ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Grade not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Grade with this number and section already exists for this board',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/grades/{gradeId}',
+  tags: ['Grades'],
+  summary: 'Soft-delete grade by ID (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      gradeId: z.uuid().openapi({ example: '44444444-4444-4444-a444-444444444444' }),
+    }),
+  },
+  responses: {
+    204: {
+      description: 'Grade soft-deleted successfully',
+    },
+    400: {
+      description: 'Invalid grade ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Grade not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Cannot delete grade with active enrolled students',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
   },
