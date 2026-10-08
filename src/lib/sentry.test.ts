@@ -13,14 +13,15 @@ vi.mock('@sentry/node', () => ({
   },
 }));
 
+import { scrubSentryEvent, initSentry, captureException } from './sentry.js';
+
 describe('Sentry Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   describe('scrubSentryEvent', () => {
-    it('removes sensitive headers such as authorization, cookie, and x-metrics-token', async () => {
-      const { scrubSentryEvent } = await import('./sentry.js');
+    it('removes sensitive headers such as authorization, cookie, and x-metrics-token', () => {
       const mockEvent = {
         request: {
           headers: {
@@ -39,8 +40,7 @@ describe('Sentry Integration', () => {
       expect(scrubbed.request?.headers?.['content-type']).toBe('application/json');
     });
 
-    it('redacts sensitive keys in request body data', async () => {
-      const { scrubSentryEvent } = await import('./sentry.js');
+    it('redacts sensitive keys in request body data', () => {
       const mockEvent = {
         request: {
           data: {
@@ -62,8 +62,7 @@ describe('Sentry Integration', () => {
       expect(data.secret).toBe('[Redacted]');
     });
 
-    it('handles event without request headers or data gracefully', async () => {
-      const { scrubSentryEvent } = await import('./sentry.js');
+    it('handles event without request headers or data gracefully', () => {
       const mockEvent = {} as unknown as ErrorEvent;
       const scrubbed = scrubSentryEvent(mockEvent);
       expect(scrubbed).toEqual({});
@@ -71,22 +70,19 @@ describe('Sentry Integration', () => {
   });
 
   describe('initSentry & captureException', () => {
-    it('returns false when no DSN is provided', async () => {
-      const { initSentry } = await import('./sentry.js');
+    it('returns false when no DSN is provided', () => {
       expect(initSentry(undefined)).toBe(false);
       expect(initSentry('')).toBe(false);
     });
 
-    it('initializes Sentry when DSN is provided', async () => {
-      const { initSentry } = await import('./sentry.js');
+    it('initializes Sentry when DSN is provided', () => {
       const initialized = initSentry('https://dummy@o0.ingest.sentry.io/0');
 
       expect(initialized).toBe(true);
       expect(mockInit).toHaveBeenCalled();
     });
 
-    it('calls Sentry.captureException when initialized', async () => {
-      const { initSentry, captureException } = await import('./sentry.js');
+    it('calls Sentry.captureException when initialized', () => {
       initSentry('https://dummy@o0.ingest.sentry.io/0');
 
       captureException(new Error('Test error'));

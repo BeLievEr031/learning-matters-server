@@ -23,16 +23,26 @@ describe('Integration Test Suite', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
+    phone: null,
+    status: '',
+    schoolId: null,
+    firstName: null,
+    lastName: null,
   };
 
   const mockUser: UserSafe = {
     id: '00000000-0000-4000-a000-000000000002',
     email: 'student@learning-matters.com',
-    role: 'user',
+    role: 'student',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
+    phone: null,
+    status: '',
+    schoolId: null,
+    firstName: null,
+    lastName: null,
   };
 
   const adminToken = jwt.sign(
@@ -41,7 +51,7 @@ describe('Integration Test Suite', () => {
   );
 
   const userToken = jwt.sign(
-    { sub: mockUser.id, role: 'user', jti: 'user-jti' },
+    { sub: mockUser.id, role: 'student', jti: 'user-jti' },
     env.JWT_ACCESS_SECRET,
   );
 
