@@ -15,6 +15,7 @@ import { gradesRouter } from './modules/grades/grades.routes.js';
 import { subjectsRouter } from './modules/subjects/subjects.routes.js';
 import { teachersRouter } from './modules/teachers/teachers.routes.js';
 import { studentsRouter } from './modules/students/students.routes.js';
+import { teacherAssignmentsRouter } from './modules/teacher-assignments/teacher-assignments.routes.js';
 import { docsRouter } from './docs/docs.routes.js';
 import { httpMetricsMiddleware } from './lib/metrics.js';
 import { metricsRouter } from './modules/metrics/metrics.routes.js';
@@ -77,6 +78,7 @@ export function createApp(): Express {
   app.use(`${API_V1}/subjects`, subjectsRouter);
   app.use(`${API_V1}/teachers`, teachersRouter);
   app.use(`${API_V1}/students`, studentsRouter);
+  app.use(`${API_V1}/teacher-assignments`, teacherAssignmentsRouter);
 
   // 9. 404 handler for unmatched routes
   app.use(notFoundHandler);

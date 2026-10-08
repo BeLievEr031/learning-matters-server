@@ -34,10 +34,15 @@ schoolTeachersRouter.get(
   teachersController.listTeachersBySchool,
 );
 
+import { teacherAssignmentsByTeacherRouter } from '../teacher-assignments/teacher-assignments.routes.js';
+
 /**
  * Direct router mounted at /api/v1/teachers
  */
 export const teachersRouter: Router = Router();
+
+// Sub-resource router for teacher assignments
+teachersRouter.use('/:teacherId/assignments', teacherAssignmentsByTeacherRouter);
 
 // Get teacher by ID (super_admin, same-school staff, or teacher themselves)
 teachersRouter.get(
