@@ -34,10 +34,15 @@ boardGradesRouter.get(
   gradesController.listGrades,
 );
 
+import { gradeSubjectsRouter } from '../subjects/subjects.routes.js';
+
 /**
  * Router mounted at /api/v1/grades
  */
 export const gradesRouter: Router = Router();
+
+// Sub-resource routers
+gradesRouter.use('/:gradeId/subjects', gradeSubjectsRouter);
 
 // Get grade by ID (super_admin or scoped admin/principal/class_teacher)
 gradesRouter.get(
