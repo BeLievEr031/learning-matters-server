@@ -1328,6 +1328,341 @@
             "$ref": "#/components/schemas/TeacherStatus"
           }
         }
+      },
+      "Student": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "77777777-7777-4777-a777-777777777777"
+          },
+          "schoolId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "11111111-1111-4111-a111-111111111111"
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "33333333-3333-4333-a333-333333333333"
+          },
+          "gradeId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "44444444-4444-4444-a444-444444444444"
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "example": "66666666-6666-4666-a666-666666666666"
+          },
+          "admissionNumber": {
+            "type": "string",
+            "example": "ADM-2026-001"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "Bart"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Simpson"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": "2012-04-01T00:00:00.000Z"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/StudentGender"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "format": "email",
+            "example": "bart@simpson.edu"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "+15551234567"
+          },
+          "guardianName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Homer Simpson"
+          },
+          "guardianPhone": {
+            "type": "string",
+            "nullable": true,
+            "example": "+15551234567"
+          },
+          "guardianEmail": {
+            "type": "string",
+            "nullable": true,
+            "format": "email",
+            "example": "homer@simpson.edu"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true,
+            "example": "742 Evergreen Terrace"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StudentStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T12:00:00.000Z"
+          },
+          "deletedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": null
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "boardId",
+          "gradeId",
+          "userId",
+          "admissionNumber",
+          "firstName",
+          "lastName",
+          "dateOfBirth",
+          "gender",
+          "email",
+          "phone",
+          "guardianName",
+          "guardianPhone",
+          "guardianEmail",
+          "address",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "deletedAt"
+        ]
+      },
+      "StudentGender": {
+        "type": "string",
+        "nullable": true,
+        "enum": [
+          "male",
+          "female",
+          "other",
+          null
+        ],
+        "example": "male"
+      },
+      "StudentStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "inactive",
+          "transferred",
+          "graduated",
+          "suspended"
+        ],
+        "example": "active"
+      },
+      "CreateStudentRequest": {
+        "type": "object",
+        "properties": {
+          "admissionNumber": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "example": "ADM-2026-001"
+          },
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Bart"
+          },
+          "lastName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Simpson"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2012-04-01T00:00:00.000Z"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/StudentGender"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "format": "email",
+            "example": "bart@simpson.edu"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 20,
+            "example": "+15551234567"
+          },
+          "guardianName": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Homer Simpson"
+          },
+          "guardianPhone": {
+            "type": "string",
+            "maxLength": 20,
+            "example": "+15551234567"
+          },
+          "guardianEmail": {
+            "type": "string",
+            "maxLength": 255,
+            "format": "email",
+            "example": "homer@simpson.edu"
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "742 Evergreen Terrace"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "66666666-6666-4666-a666-666666666666"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive",
+              "transferred",
+              "graduated",
+              "suspended"
+            ],
+            "default": "active",
+            "example": "active"
+          }
+        },
+        "required": [
+          "admissionNumber",
+          "firstName",
+          "lastName"
+        ]
+      },
+      "UpdateStudentRequest": {
+        "type": "object",
+        "properties": {
+          "admissionNumber": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "example": "ADM-2026-001"
+          },
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Bart"
+          },
+          "lastName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Simpson"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": "2012-04-01T00:00:00.000Z"
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "male",
+              "female",
+              "other",
+              null
+            ],
+            "example": "male"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255,
+            "format": "email",
+            "example": "bart@simpson.edu"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20,
+            "example": "+15551234567"
+          },
+          "guardianName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200,
+            "example": "Homer Simpson"
+          },
+          "guardianPhone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20,
+            "example": "+15551234567"
+          },
+          "guardianEmail": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255,
+            "format": "email",
+            "example": "homer@simpson.edu"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500,
+            "example": "742 Evergreen Terrace"
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "example": "66666666-6666-4666-a666-666666666666"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StudentStatus"
+          }
+        },
+        "required": [
+          "firstName"
+        ]
+      },
+      "TransferStudentRequest": {
+        "type": "object",
+        "properties": {
+          "targetGradeId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "55555555-5555-4555-a555-555555555555"
+          }
+        },
+        "required": [
+          "targetGradeId"
+        ]
       }
     },
     "parameters": {}
@@ -4756,6 +5091,592 @@
           },
           "404": {
             "description": "Teacher not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/grades/{gradeId}/students": {
+      "post": {
+        "tags": [
+          "Students"
+        ],
+        "summary": "Enroll student under grade (Super Admin or School Admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "44444444-4444-4444-a444-444444444444"
+            },
+            "required": true,
+            "name": "gradeId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Student enrolled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Student"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or grade is inactive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin or own-school Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Grade or linked user not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Admission number already exists in this school",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Students"
+        ],
+        "summary": "List students in grade with pagination (Super Admin, School Admin, Principal, or Class Teacher)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "44444444-4444-4444-a444-444444444444"
+            },
+            "required": true,
+            "name": "gradeId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/StudentStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/StudentGender"
+            },
+            "required": false,
+            "name": "gender",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of students in grade",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Student"
+                      }
+                    },
+                    "pageInfo": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "pageInfo"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Cannot access students from another school",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Grade not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{studentId}": {
+      "get": {
+        "tags": [
+          "Students"
+        ],
+        "summary": "Get student by ID (Super Admin, School Staff, or Student)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "77777777-7777-4777-a777-777777777777"
+            },
+            "required": true,
+            "name": "studentId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Student profile retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Student"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid student ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Cannot access student from another school",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Students"
+        ],
+        "summary": "Update student profile (Super Admin or School Admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "77777777-7777-4777-a777-777777777777"
+            },
+            "required": true,
+            "name": "studentId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStudentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Student updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Student"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin or own-school Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student or linked user not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Admission number already exists in this school",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Students"
+        ],
+        "summary": "Soft-delete student profile (Super Admin or School Admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "77777777-7777-4777-a777-777777777777"
+            },
+            "required": true,
+            "name": "studentId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Student soft-deleted successfully"
+          },
+          "400": {
+            "description": "Invalid student ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin or own-school Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{studentId}/transfer": {
+      "patch": {
+        "tags": [
+          "Students"
+        ],
+        "summary": "Transfer student to another grade (Super Admin or School Admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "77777777-7777-4777-a777-777777777777"
+            },
+            "required": true,
+            "name": "studentId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferStudentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Student transferred successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Student"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed, target grade is inactive, or in another school",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin or own-school Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student or target grade not found",
             "content": {
               "application/json": {
                 "schema": {

@@ -388,6 +388,100 @@ export const UpdateTeacherRequestSchema = z
   .openapi('UpdateTeacherRequest');
 
 // ---------------------------------------------------------------------------
+// Student Schemas
+// ---------------------------------------------------------------------------
+export const StudentStatusSchema = z
+  .enum(['active', 'inactive', 'transferred', 'graduated', 'suspended'])
+  .openapi('StudentStatus');
+
+export const StudentGenderSchema = z.enum(['male', 'female', 'other']).openapi('StudentGender');
+
+export const StudentSchema = z
+  .object({
+    id: z.uuid().openapi({ example: '77777777-7777-4777-a777-777777777777' }),
+    schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    boardId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    gradeId: z.uuid().openapi({ example: '44444444-4444-4444-a444-444444444444' }),
+    userId: z.uuid().nullable().openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+    admissionNumber: z.string().openapi({ example: 'ADM-2026-001' }),
+    firstName: z.string().openapi({ example: 'Bart' }),
+    lastName: z.string().openapi({ example: 'Simpson' }),
+    dateOfBirth: z.iso.datetime().nullable().openapi({ example: '2012-04-01T00:00:00.000Z' }),
+    gender: StudentGenderSchema.nullable().openapi({ example: 'male' }),
+    email: z.email().nullable().openapi({ example: 'bart@simpson.edu' }),
+    phone: z.string().nullable().openapi({ example: '+15551234567' }),
+    guardianName: z.string().nullable().openapi({ example: 'Homer Simpson' }),
+    guardianPhone: z.string().nullable().openapi({ example: '+15551234567' }),
+    guardianEmail: z.email().nullable().openapi({ example: 'homer@simpson.edu' }),
+    address: z.string().nullable().openapi({ example: '742 Evergreen Terrace' }),
+    status: StudentStatusSchema.openapi({ example: 'active' }),
+    createdAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    updatedAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    deletedAt: z.iso.datetime().nullable().openapi({ example: null }),
+  })
+  .openapi('Student');
+
+export const CreateStudentRequestSchema = z
+  .object({
+    admissionNumber: z.string().min(1).max(50).openapi({ example: 'ADM-2026-001' }),
+    firstName: z.string().min(1).max(100).openapi({ example: 'Bart' }),
+    lastName: z.string().min(1).max(100).openapi({ example: 'Simpson' }),
+    dateOfBirth: z.iso.datetime().optional().openapi({ example: '2012-04-01T00:00:00.000Z' }),
+    gender: StudentGenderSchema.optional().openapi({ example: 'male' }),
+    email: z.email().max(255).optional().openapi({ example: 'bart@simpson.edu' }),
+    phone: z.string().max(20).optional().openapi({ example: '+15551234567' }),
+    guardianName: z.string().max(200).optional().openapi({ example: 'Homer Simpson' }),
+    guardianPhone: z.string().max(20).optional().openapi({ example: '+15551234567' }),
+    guardianEmail: z.email().max(255).optional().openapi({ example: 'homer@simpson.edu' }),
+    address: z.string().max(500).optional().openapi({ example: '742 Evergreen Terrace' }),
+    userId: z.uuid().optional().openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+    status: StudentStatusSchema.default('active').optional().openapi({ example: 'active' }),
+  })
+  .openapi('CreateStudentRequest');
+
+export const UpdateStudentRequestSchema = z
+  .object({
+    admissionNumber: z.string().min(1).max(50).optional().openapi({ example: 'ADM-2026-001' }),
+    firstName: z.string().min(1).max(100).openapi({ example: 'Bart' }),
+    lastName: z.string().min(1).max(100).optional().openapi({ example: 'Simpson' }),
+    dateOfBirth: z.iso
+      .datetime()
+      .nullable()
+      .optional()
+      .openapi({ example: '2012-04-01T00:00:00.000Z' }),
+    gender: StudentGenderSchema.nullable().optional().openapi({ example: 'male' }),
+    email: z.email().max(255).nullable().optional().openapi({ example: 'bart@simpson.edu' }),
+    phone: z.string().max(20).nullable().optional().openapi({ example: '+15551234567' }),
+    guardianName: z.string().max(200).nullable().optional().openapi({ example: 'Homer Simpson' }),
+    guardianPhone: z.string().max(20).nullable().optional().openapi({ example: '+15551234567' }),
+    guardianEmail: z
+      .email()
+      .max(255)
+      .nullable()
+      .optional()
+      .openapi({ example: 'homer@simpson.edu' }),
+    address: z
+      .string()
+      .max(500)
+      .nullable()
+      .optional()
+      .openapi({ example: '742 Evergreen Terrace' }),
+    userId: z
+      .uuid()
+      .nullable()
+      .optional()
+      .openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+    status: StudentStatusSchema.optional().openapi({ example: 'active' }),
+  })
+  .openapi('UpdateStudentRequest');
+
+export const TransferStudentRequestSchema = z
+  .object({
+    targetGradeId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+  })
+  .openapi('TransferStudentRequest');
+
+// ---------------------------------------------------------------------------
 // Auth Schemas
 // ---------------------------------------------------------------------------
 export const TokenPairSchema = z
@@ -2157,6 +2251,284 @@ registry.registerPath({
     },
     404: {
       description: 'Teacher not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Student Endpoints
+// ---------------------------------------------------------------------------
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/grades/{gradeId}/students',
+  tags: ['Students'],
+  summary: 'Enroll student under grade (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      gradeId: z.uuid().openapi({ example: '44444444-4444-4444-a444-444444444444' }),
+    }),
+    body: {
+      content: {
+        'application/json': {
+          schema: CreateStudentRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: 'Student enrolled successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: StudentSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation failed or grade is inactive',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Grade or linked user not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Admission number already exists in this school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/grades/{gradeId}/students',
+  tags: ['Students'],
+  summary:
+    'List students in grade with pagination (Super Admin, School Admin, Principal, or Class Teacher)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      gradeId: z.uuid().openapi({ example: '44444444-4444-4444-a444-444444444444' }),
+    }),
+    query: z.object({
+      limit: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_PAGE_SIZE)
+        .default(DEFAULT_PAGE_SIZE)
+        .optional(),
+      cursor: z.string().optional(),
+      status: StudentStatusSchema.optional(),
+      gender: StudentGenderSchema.optional(),
+      search: z.string().optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Paginated list of students in grade',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.array(StudentSchema),
+            pageInfo: PageInfoSchema,
+          }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid query parameters',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Cannot access students from another school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Grade not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/students/{studentId}',
+  tags: ['Students'],
+  summary: 'Get student by ID (Super Admin, School Staff, or Student)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      studentId: z.uuid().openapi({ example: '77777777-7777-4777-a777-777777777777' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Student profile retrieved',
+      content: {
+        'application/json': {
+          schema: z.object({ data: StudentSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid student ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Cannot access student from another school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Student not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/students/{studentId}',
+  tags: ['Students'],
+  summary: 'Update student profile (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      studentId: z.uuid().openapi({ example: '77777777-7777-4777-a777-777777777777' }),
+    }),
+    body: {
+      content: {
+        'application/json': {
+          schema: UpdateStudentRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Student updated successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: StudentSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation failed',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Student or linked user not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Admission number already exists in this school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/students/{studentId}/transfer',
+  tags: ['Students'],
+  summary: 'Transfer student to another grade (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      studentId: z.uuid().openapi({ example: '77777777-7777-4777-a777-777777777777' }),
+    }),
+    body: {
+      content: {
+        'application/json': {
+          schema: TransferStudentRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Student transferred successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: StudentSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation failed, target grade is inactive, or in another school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Student or target grade not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/students/{studentId}',
+  tags: ['Students'],
+  summary: 'Soft-delete student profile (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      studentId: z.uuid().openapi({ example: '77777777-7777-4777-a777-777777777777' }),
+    }),
+  },
+  responses: {
+    204: {
+      description: 'Student soft-deleted successfully',
+    },
+    400: {
+      description: 'Invalid student ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Student not found',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
   },
