@@ -36,10 +36,15 @@ schoolBoardsRouter.get(
   boardsController.listBoards,
 );
 
+import { boardGradesRouter } from '../grades/grades.routes.js';
+
 /**
  * Router mounted at /api/v1/boards
  */
 export const boardsRouter: Router = Router();
+
+// Sub-resource routers
+boardsRouter.use('/:boardId/grades', boardGradesRouter);
 
 // Get board by ID (super_admin or scoped admin/principal)
 boardsRouter.get(
