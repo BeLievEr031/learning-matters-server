@@ -43,6 +43,13 @@
       "when": 1791114000000,
       "tag": "0005_add_grades_table",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791117000000,
+      "tag": "0006_add_subjects_and_grade_subjects_tables",
+      "breakpoints": true
     }
   ]
 }
