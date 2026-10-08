@@ -10,11 +10,13 @@ import {
   schoolIdParamSchema,
 } from './schools.schemas.js';
 import { schoolBoardsRouter } from '../boards/boards.routes.js';
+import { schoolTeachersRouter } from '../teachers/teachers.routes.js';
 
 export const schoolsRouter: Router = Router();
 
 // Sub-resource routers
 schoolsRouter.use('/:schoolId/boards', schoolBoardsRouter);
+schoolsRouter.use('/:schoolId/teachers', schoolTeachersRouter);
 
 // Create school (super_admin only)
 schoolsRouter.post(
