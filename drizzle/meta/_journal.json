@@ -50,6 +50,13 @@
       "when": 1791117000000,
       "tag": "0006_add_subjects_and_grade_subjects_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791120000000,
+      "tag": "0007_add_teachers_table",
+      "breakpoints": true
     }
   ]
 }

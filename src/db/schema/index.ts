@@ -4,3 +4,4 @@ export * from './schools.js';
 export * from './boards.js';
 export * from './grades.js';
 export * from './subjects.js';
+export * from './teachers.js';
