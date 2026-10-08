@@ -326,6 +326,68 @@ export const UpdateSubjectRequestSchema = z
   .openapi('UpdateSubjectRequest');
 
 // ---------------------------------------------------------------------------
+// Teacher Schemas
+// ---------------------------------------------------------------------------
+export const TeacherStatusSchema = z
+  .enum(['active', 'inactive', 'on_leave', 'terminated'])
+  .openapi('TeacherStatus');
+
+export const TeacherSchema = z
+  .object({
+    id: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    userId: z.uuid().nullable().openapi({ example: '99999999-9999-4999-a999-999999999999' }),
+    employeeId: z.string().openapi({ example: 'EMP-001' }),
+    firstName: z.string().openapi({ example: 'Edna' }),
+    lastName: z.string().openapi({ example: 'Krabappel' }),
+    email: z.email().openapi({ example: 'edna@springfield.edu' }),
+    phone: z.string().nullable().openapi({ example: '+15559876543' }),
+    joiningDate: z.iso.datetime().nullable().openapi({ example: '2025-08-01T00:00:00.000Z' }),
+    qualification: z.string().nullable().openapi({ example: 'M.Ed.' }),
+    status: TeacherStatusSchema.openapi({ example: 'active' }),
+    createdAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    updatedAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    deletedAt: z.iso.datetime().nullable().openapi({ example: null }),
+  })
+  .openapi('Teacher');
+
+export const CreateTeacherRequestSchema = z
+  .object({
+    employeeId: z.string().min(1).max(50).openapi({ example: 'EMP-001' }),
+    firstName: z.string().min(1).max(100).openapi({ example: 'Edna' }),
+    lastName: z.string().min(1).max(100).openapi({ example: 'Krabappel' }),
+    email: z.email().max(255).openapi({ example: 'edna@springfield.edu' }),
+    phone: z.string().max(20).optional().openapi({ example: '+15559876543' }),
+    userId: z.uuid().optional().openapi({ example: '99999999-9999-4999-a999-999999999999' }),
+    joiningDate: z.iso.datetime().optional().openapi({ example: '2025-08-01T00:00:00.000Z' }),
+    qualification: z.string().max(255).optional().openapi({ example: 'M.Ed.' }),
+    status: TeacherStatusSchema.default('active').optional().openapi({ example: 'active' }),
+  })
+  .openapi('CreateTeacherRequest');
+
+export const UpdateTeacherRequestSchema = z
+  .object({
+    employeeId: z.string().min(1).max(50).optional().openapi({ example: 'EMP-001' }),
+    firstName: z.string().min(1).max(100).optional().openapi({ example: 'Edna' }),
+    lastName: z.string().min(1).max(100).optional().openapi({ example: 'Krabappel' }),
+    email: z.email().max(255).optional().openapi({ example: 'edna@springfield.edu' }),
+    phone: z.string().max(20).nullable().optional().openapi({ example: '+15559876543' }),
+    userId: z
+      .uuid()
+      .nullable()
+      .optional()
+      .openapi({ example: '99999999-9999-4999-a999-999999999999' }),
+    joiningDate: z.iso
+      .datetime()
+      .nullable()
+      .optional()
+      .openapi({ example: '2025-08-01T00:00:00.000Z' }),
+    qualification: z.string().max(255).nullable().optional().openapi({ example: 'Ph.D.' }),
+    status: TeacherStatusSchema.optional().openapi({ example: 'active' }),
+  })
+  .openapi('UpdateTeacherRequest');
+
+// ---------------------------------------------------------------------------
 // Auth Schemas
 // ---------------------------------------------------------------------------
 export const TokenPairSchema = z
@@ -1863,6 +1925,238 @@ registry.registerPath({
     },
     404: {
       description: 'Subject not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Teacher Endpoints
+// ---------------------------------------------------------------------------
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/schools/{schoolId}/teachers',
+  tags: ['Teachers'],
+  summary: 'Create teacher under a school (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: CreateTeacherRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: 'Teacher created successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: TeacherSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'School or linked user not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Teacher with this employee ID or email already exists in this school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/schools/{schoolId}/teachers',
+  tags: ['Teachers'],
+  summary: 'List teachers under a school (Super Admin, School Admin, or Principal)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    }),
+    query: z.object({
+      limit: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_PAGE_SIZE)
+        .default(DEFAULT_PAGE_SIZE)
+        .optional(),
+      cursor: z.string().optional().openapi({ example: 'ZXhhbXBsZQ==' }),
+      status: TeacherStatusSchema.optional(),
+      search: z.string().optional().openapi({ example: 'Edna' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Paginated list of teachers under the school',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.array(TeacherSchema),
+            pageInfo: PageInfoSchema,
+          }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid parameter or query format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Insufficient permissions or wrong school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'School not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/teachers/{teacherId}',
+  tags: ['Teachers'],
+  summary: 'Get teacher profile by ID (Super Admin, same-school staff, or teacher self)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      teacherId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Teacher details retrieved successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: TeacherSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid teacher ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Insufficient permissions or wrong school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Teacher not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/teachers/{teacherId}',
+  tags: ['Teachers'],
+  summary: 'Update teacher profile (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      teacherId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: UpdateTeacherRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Teacher profile updated successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: TeacherSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Teacher or linked user not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Teacher employee ID or email already exists in this school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/teachers/{teacherId}',
+  tags: ['Teachers'],
+  summary: 'Soft-delete teacher profile (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      teacherId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    }),
+  },
+  responses: {
+    204: {
+      description: 'Teacher soft-deleted successfully',
+    },
+    400: {
+      description: 'Invalid teacher ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Teacher not found',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
   },
