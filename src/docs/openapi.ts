@@ -482,6 +482,60 @@ export const TransferStudentRequestSchema = z
   .openapi('TransferStudentRequest');
 
 // ---------------------------------------------------------------------------
+// Teacher Assignment Schemas
+// ---------------------------------------------------------------------------
+export const TeacherAssignmentStatusSchema = z
+  .enum(['active', 'inactive'])
+  .openapi('TeacherAssignmentStatus');
+
+export const TeacherAssignmentSchema = z
+  .object({
+    id: z.uuid().openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+    schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    teacherId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    gradeId: z.uuid().openapi({ example: '44444444-4444-4444-a444-444444444444' }),
+    subjectId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    assignedBy: z.uuid().nullable().openapi({ example: '99999999-9999-4999-a999-999999999999' }),
+    status: TeacherAssignmentStatusSchema.openapi({ example: 'active' }),
+    effectiveDate: z.iso.datetime().nullable().openapi({ example: '2026-02-01T00:00:00.000Z' }),
+    createdAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    updatedAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    deletedAt: z.iso.datetime().nullable().openapi({ example: null }),
+    teacherFirstName: z.string().nullable().optional().openapi({ example: 'Edna' }),
+    teacherLastName: z.string().nullable().optional().openapi({ example: 'Krabappel' }),
+    teacherEmail: z.string().nullable().optional().openapi({ example: 'edna@springfield.edu' }),
+    teacherEmployeeId: z.string().nullable().optional().openapi({ example: 'EMP-001' }),
+    gradeName: z.string().nullable().optional().openapi({ example: 'Grade 10 - Section A' }),
+    gradeCode: z.string().nullable().optional().openapi({ example: 'G10-A' }),
+    subjectName: z.string().nullable().optional().openapi({ example: 'Mathematics' }),
+    subjectCode: z.string().nullable().optional().openapi({ example: 'MATH' }),
+  })
+  .openapi('TeacherAssignment');
+
+export const CreateTeacherAssignmentRequestSchema = z
+  .object({
+    teacherId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    gradeId: z.uuid().openapi({ example: '44444444-4444-4444-a444-444444444444' }),
+    subjectId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    effectiveDate: z.iso.datetime().optional().openapi({ example: '2026-02-01T00:00:00.000Z' }),
+    status: TeacherAssignmentStatusSchema.default('active')
+      .optional()
+      .openapi({ example: 'active' }),
+  })
+  .openapi('CreateTeacherAssignmentRequest');
+
+export const UpdateTeacherAssignmentRequestSchema = z
+  .object({
+    status: TeacherAssignmentStatusSchema.optional().openapi({ example: 'inactive' }),
+    effectiveDate: z.iso
+      .datetime()
+      .nullable()
+      .optional()
+      .openapi({ example: '2026-06-01T00:00:00.000Z' }),
+  })
+  .openapi('UpdateTeacherAssignmentRequest');
+
+// ---------------------------------------------------------------------------
 // Auth Schemas
 // ---------------------------------------------------------------------------
 export const TokenPairSchema = z
@@ -2529,6 +2583,343 @@ registry.registerPath({
     },
     404: {
       description: 'Student not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Teacher Assignment Endpoints
+// ---------------------------------------------------------------------------
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/teacher-assignments',
+  tags: ['Teacher Assignments'],
+  summary: 'Assign teacher to grade and subject (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: CreateTeacherAssignmentRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: 'Teacher assigned successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: TeacherAssignmentSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation failed, entity inactive, or subject not assigned to grade',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Teacher, grade, or subject not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Teacher is already assigned to this grade and subject',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/teacher-assignments',
+  tags: ['Teacher Assignments'],
+  summary:
+    'List teacher assignments with pagination and filters (Super Admin, School Admin, or Principal)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({
+      limit: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_PAGE_SIZE)
+        .default(DEFAULT_PAGE_SIZE)
+        .optional(),
+      cursor: z.string().optional(),
+      teacherId: z.uuid().optional(),
+      gradeId: z.uuid().optional(),
+      subjectId: z.uuid().optional(),
+      status: TeacherAssignmentStatusSchema.optional(),
+      schoolId: z.uuid().optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Paginated list of teacher assignments',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.array(TeacherAssignmentSchema),
+            pageInfo: PageInfoSchema,
+          }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid query parameters',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Cannot access assignments from another school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/teacher-assignments/{assignmentId}',
+  tags: ['Teacher Assignments'],
+  summary: 'Get teacher assignment by ID (Super Admin, School Staff)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      assignmentId: z.uuid().openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Teacher assignment retrieved',
+      content: {
+        'application/json': {
+          schema: z.object({ data: TeacherAssignmentSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid assignment ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Cannot access assignment from another school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Teacher assignment not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/teacher-assignments/{assignmentId}',
+  tags: ['Teacher Assignments'],
+  summary: 'Update teacher assignment status or effective date (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      assignmentId: z.uuid().openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+    }),
+    body: {
+      content: {
+        'application/json': {
+          schema: UpdateTeacherAssignmentRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Teacher assignment updated successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: TeacherAssignmentSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation failed',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Teacher assignment not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/teacher-assignments/{assignmentId}',
+  tags: ['Teacher Assignments'],
+  summary: 'Soft-delete teacher assignment (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      assignmentId: z.uuid().openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+    }),
+  },
+  responses: {
+    204: {
+      description: 'Teacher assignment soft-deleted successfully',
+    },
+    400: {
+      description: 'Invalid assignment ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Teacher assignment not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/teachers/{teacherId}/assignments',
+  tags: ['Teacher Assignments'],
+  summary: 'List all assignments for a teacher (Super Admin, School Staff)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      teacherId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'List of assignments for teacher',
+      content: {
+        'application/json': {
+          schema: z.object({ data: z.array(TeacherAssignmentSchema) }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid teacher ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Cannot access teacher from another school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Teacher not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/grades/{gradeId}/teachers',
+  tags: ['Teacher Assignments'],
+  summary: 'List all teachers assigned to a grade (Super Admin, School Staff)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      gradeId: z.uuid().openapi({ example: '44444444-4444-4444-a444-444444444444' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'List of teachers assigned to grade',
+      content: {
+        'application/json': {
+          schema: z.object({ data: z.array(TeacherAssignmentSchema) }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid grade ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Cannot access grade from another school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Grade not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/subjects/{subjectId}/teachers',
+  tags: ['Teacher Assignments'],
+  summary: 'List all teachers assigned to a subject (Super Admin, School Staff)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      subjectId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'List of teachers assigned to subject',
+      content: {
+        'application/json': {
+          schema: z.object({ data: z.array(TeacherAssignmentSchema) }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid subject ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Cannot access subject from another school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Subject not found',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
   },

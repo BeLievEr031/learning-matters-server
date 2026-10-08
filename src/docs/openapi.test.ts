@@ -82,6 +82,16 @@ describe('OpenAPI Documentation & Swagger UI', () => {
     expect(paths['/api/v1/students/{studentId}']?.patch).toBeDefined();
     expect(paths['/api/v1/students/{studentId}/transfer']?.patch).toBeDefined();
     expect(paths['/api/v1/students/{studentId}']?.delete).toBeDefined();
+
+    // Teacher Assignments
+    expect(paths['/api/v1/teacher-assignments']?.post).toBeDefined();
+    expect(paths['/api/v1/teacher-assignments']?.get).toBeDefined();
+    expect(paths['/api/v1/teacher-assignments/{assignmentId}']?.get).toBeDefined();
+    expect(paths['/api/v1/teacher-assignments/{assignmentId}']?.patch).toBeDefined();
+    expect(paths['/api/v1/teacher-assignments/{assignmentId}']?.delete).toBeDefined();
+    expect(paths['/api/v1/teachers/{teacherId}/assignments']?.get).toBeDefined();
+    expect(paths['/api/v1/grades/{gradeId}/teachers']?.get).toBeDefined();
+    expect(paths['/api/v1/subjects/{subjectId}/teachers']?.get).toBeDefined();
   });
 
   it('documents bearerAuth security on protected endpoints', () => {
@@ -137,6 +147,26 @@ describe('OpenAPI Documentation & Swagger UI', () => {
       { bearerAuth: [] },
     ]);
     expect(paths['/api/v1/students/{studentId}']?.delete?.security).toEqual([{ bearerAuth: [] }]);
+
+    // Teacher Assignments
+    expect(paths['/api/v1/teacher-assignments']?.post?.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/teacher-assignments']?.get?.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/teacher-assignments/{assignmentId}']?.get?.security).toEqual([
+      { bearerAuth: [] },
+    ]);
+    expect(paths['/api/v1/teacher-assignments/{assignmentId}']?.patch?.security).toEqual([
+      { bearerAuth: [] },
+    ]);
+    expect(paths['/api/v1/teacher-assignments/{assignmentId}']?.delete?.security).toEqual([
+      { bearerAuth: [] },
+    ]);
+    expect(paths['/api/v1/teachers/{teacherId}/assignments']?.get?.security).toEqual([
+      { bearerAuth: [] },
+    ]);
+    expect(paths['/api/v1/grades/{gradeId}/teachers']?.get?.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/subjects/{subjectId}/teachers']?.get?.security).toEqual([
+      { bearerAuth: [] },
+    ]);
 
     // Public endpoints should NOT have security defined
     expect(paths['/api/v1/auth/login']?.post?.security).toBeUndefined();

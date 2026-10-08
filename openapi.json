@@ -1663,6 +1663,188 @@
         "required": [
           "targetGradeId"
         ]
+      },
+      "TeacherAssignment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "66666666-6666-4666-a666-666666666666"
+          },
+          "schoolId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "11111111-1111-4111-a111-111111111111"
+          },
+          "teacherId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "33333333-3333-4333-a333-333333333333"
+          },
+          "gradeId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "44444444-4444-4444-a444-444444444444"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "55555555-5555-4555-a555-555555555555"
+          },
+          "assignedBy": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "example": "99999999-9999-4999-a999-999999999999"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TeacherAssignmentStatus"
+          },
+          "effectiveDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": "2026-02-01T00:00:00.000Z"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T12:00:00.000Z"
+          },
+          "deletedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": null
+          },
+          "teacherFirstName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Edna"
+          },
+          "teacherLastName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Krabappel"
+          },
+          "teacherEmail": {
+            "type": "string",
+            "nullable": true,
+            "example": "edna@springfield.edu"
+          },
+          "teacherEmployeeId": {
+            "type": "string",
+            "nullable": true,
+            "example": "EMP-001"
+          },
+          "gradeName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Grade 10 - Section A"
+          },
+          "gradeCode": {
+            "type": "string",
+            "nullable": true,
+            "example": "G10-A"
+          },
+          "subjectName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Mathematics"
+          },
+          "subjectCode": {
+            "type": "string",
+            "nullable": true,
+            "example": "MATH"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "teacherId",
+          "gradeId",
+          "subjectId",
+          "assignedBy",
+          "status",
+          "effectiveDate",
+          "createdAt",
+          "updatedAt",
+          "deletedAt"
+        ]
+      },
+      "TeacherAssignmentStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "inactive"
+        ],
+        "example": "active"
+      },
+      "CreateTeacherAssignmentRequest": {
+        "type": "object",
+        "properties": {
+          "teacherId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "33333333-3333-4333-a333-333333333333"
+          },
+          "gradeId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "44444444-4444-4444-a444-444444444444"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "55555555-5555-4555-a555-555555555555"
+          },
+          "effectiveDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-02-01T00:00:00.000Z"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive"
+            ],
+            "default": "active",
+            "example": "active"
+          }
+        },
+        "required": [
+          "teacherId",
+          "gradeId",
+          "subjectId"
+        ]
+      },
+      "UpdateTeacherAssignmentRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TeacherAssignmentStatus"
+              },
+              {
+                "example": "inactive"
+              }
+            ]
+          },
+          "effectiveDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": "2026-06-01T00:00:00.000Z"
+          }
+        }
       }
     },
     "parameters": {}
@@ -5677,6 +5859,740 @@
           },
           "404": {
             "description": "Student or target grade not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teacher-assignments": {
+      "post": {
+        "tags": [
+          "Teacher Assignments"
+        ],
+        "summary": "Assign teacher to grade and subject (Super Admin or School Admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTeacherAssignmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Teacher assigned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TeacherAssignment"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed, entity inactive, or subject not assigned to grade",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin or own-school Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Teacher, grade, or subject not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Teacher is already assigned to this grade and subject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Teacher Assignments"
+        ],
+        "summary": "List teacher assignments with pagination and filters (Super Admin, School Admin, or Principal)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "teacherId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "gradeId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/TeacherAssignmentStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "schoolId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of teacher assignments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TeacherAssignment"
+                      }
+                    },
+                    "pageInfo": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "pageInfo"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Cannot access assignments from another school",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teacher-assignments/{assignmentId}": {
+      "get": {
+        "tags": [
+          "Teacher Assignments"
+        ],
+        "summary": "Get teacher assignment by ID (Super Admin, School Staff)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "66666666-6666-4666-a666-666666666666"
+            },
+            "required": true,
+            "name": "assignmentId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Teacher assignment retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TeacherAssignment"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid assignment ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Cannot access assignment from another school",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Teacher assignment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Teacher Assignments"
+        ],
+        "summary": "Update teacher assignment status or effective date (Super Admin or School Admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "66666666-6666-4666-a666-666666666666"
+            },
+            "required": true,
+            "name": "assignmentId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTeacherAssignmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Teacher assignment updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TeacherAssignment"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin or own-school Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Teacher assignment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Teacher Assignments"
+        ],
+        "summary": "Soft-delete teacher assignment (Super Admin or School Admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "66666666-6666-4666-a666-666666666666"
+            },
+            "required": true,
+            "name": "assignmentId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Teacher assignment soft-deleted successfully"
+          },
+          "400": {
+            "description": "Invalid assignment ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin or own-school Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Teacher assignment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teachers/{teacherId}/assignments": {
+      "get": {
+        "tags": [
+          "Teacher Assignments"
+        ],
+        "summary": "List all assignments for a teacher (Super Admin, School Staff)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "33333333-3333-4333-a333-333333333333"
+            },
+            "required": true,
+            "name": "teacherId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of assignments for teacher",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TeacherAssignment"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid teacher ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Cannot access teacher from another school",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Teacher not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/grades/{gradeId}/teachers": {
+      "get": {
+        "tags": [
+          "Teacher Assignments"
+        ],
+        "summary": "List all teachers assigned to a grade (Super Admin, School Staff)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "44444444-4444-4444-a444-444444444444"
+            },
+            "required": true,
+            "name": "gradeId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of teachers assigned to grade",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TeacherAssignment"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid grade ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Cannot access grade from another school",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Grade not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subjects/{subjectId}/teachers": {
+      "get": {
+        "tags": [
+          "Teacher Assignments"
+        ],
+        "summary": "List all teachers assigned to a subject (Super Admin, School Staff)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "55555555-5555-4555-a555-555555555555"
+            },
+            "required": true,
+            "name": "subjectId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of teachers assigned to subject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TeacherAssignment"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid subject ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Cannot access subject from another school",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subject not found",
             "content": {
               "application/json": {
                 "schema": {
