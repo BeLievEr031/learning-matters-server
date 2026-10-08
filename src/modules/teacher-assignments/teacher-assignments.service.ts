@@ -101,7 +101,7 @@ export class TeacherAssignmentsService {
       gradeId: grade.id,
       subjectId: subject.id,
       assignedBy: callerUserId ?? null,
-      status: input.status,
+      status: input.status ?? 'active',
       effectiveDate: input.effectiveDate,
     });
   }

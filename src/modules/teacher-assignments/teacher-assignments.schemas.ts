@@ -8,7 +8,7 @@ export const createTeacherAssignmentSchema = z.object({
   gradeId: z.uuid('Invalid grade ID format'),
   subjectId: z.uuid('Invalid subject ID format'),
   effectiveDate: z.coerce.date().optional(),
-  status: z.enum(TEACHER_ASSIGNMENT_STATUSES).default('active'),
+  status: z.enum(TEACHER_ASSIGNMENT_STATUSES).default('active').optional(),
 });
 
 export const updateTeacherAssignmentSchema = z
