@@ -6,3 +6,4 @@ export * from './grades.js';
 export * from './subjects.js';
 export * from './teachers.js';
 export * from './students.js';
+export * from './teacher-assignments.js';

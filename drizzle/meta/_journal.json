@@ -64,6 +64,13 @@
       "when": 1791123000000,
       "tag": "0008_add_students_table",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791126000000,
+      "tag": "0009_add_teacher_assignments_table",
+      "breakpoints": true
     }
   ]
 }
