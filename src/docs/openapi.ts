@@ -256,6 +256,76 @@ export const UpdateGradeRequestSchema = z
   .openapi('UpdateGradeRequest');
 
 // ---------------------------------------------------------------------------
+// Subject Schemas
+// ---------------------------------------------------------------------------
+export const SubjectStatusSchema = z
+  .enum(['active', 'inactive', 'archived'])
+  .openapi('SubjectStatus');
+
+export const GradeSubjectStatusSchema = z
+  .enum(['active', 'inactive', 'archived'])
+  .openapi('GradeSubjectStatus');
+
+export const SubjectSchema = z
+  .object({
+    id: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    name: z.string().openapi({ example: 'Mathematics' }),
+    code: z.string().openapi({ example: 'MATH' }),
+    description: z.string().nullable().openapi({ example: 'Core Mathematics syllabus' }),
+    status: SubjectStatusSchema.openapi({ example: 'active' }),
+    createdAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    updatedAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    deletedAt: z.iso.datetime().nullable().openapi({ example: null }),
+  })
+  .openapi('Subject');
+
+export const GradeSubjectItemSchema = z
+  .object({
+    id: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    name: z.string().openapi({ example: 'Mathematics' }),
+    code: z.string().openapi({ example: 'MATH' }),
+    description: z.string().nullable().openapi({ example: 'Core Mathematics syllabus' }),
+    status: SubjectStatusSchema.openapi({ example: 'active' }),
+    createdAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    updatedAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    deletedAt: z.iso.datetime().nullable().openapi({ example: null }),
+    gradeSubjectId: z.uuid().openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+    gradeSubjectStatus: GradeSubjectStatusSchema.openapi({ example: 'active' }),
+  })
+  .openapi('GradeSubjectItem');
+
+export const AssignOrCreateSubjectRequestSchema = z
+  .object({
+    subjectId: z.uuid().optional().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    name: z.string().min(1).max(255).optional().openapi({ example: 'Mathematics' }),
+    code: z.string().min(1).max(50).optional().openapi({ example: 'MATH' }),
+    description: z
+      .string()
+      .max(1000)
+      .nullable()
+      .optional()
+      .openapi({ example: 'Core Mathematics syllabus' }),
+    status: SubjectStatusSchema.default('active').optional().openapi({ example: 'active' }),
+  })
+  .openapi('AssignOrCreateSubjectRequest');
+
+export const UpdateSubjectRequestSchema = z
+  .object({
+    name: z.string().min(1).max(255).optional().openapi({ example: 'Advanced Mathematics' }),
+    code: z.string().min(1).max(50).optional().openapi({ example: 'MATH-ADV' }),
+    description: z
+      .string()
+      .max(1000)
+      .nullable()
+      .optional()
+      .openapi({ example: 'Advanced curriculum' }),
+    status: SubjectStatusSchema.optional().openapi({ example: 'active' }),
+  })
+  .openapi('UpdateSubjectRequest');
+
+// ---------------------------------------------------------------------------
 // Auth Schemas
 // ---------------------------------------------------------------------------
 export const TokenPairSchema = z
@@ -1523,6 +1593,276 @@ registry.registerPath({
     },
     409: {
       description: 'Cannot delete grade with active enrolled students',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Subject Endpoints
+// ---------------------------------------------------------------------------
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/grades/{gradeId}/subjects',
+  tags: ['Subjects'],
+  summary: 'Assign existing or create new subject for a grade (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      gradeId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: AssignOrCreateSubjectRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: 'Subject assigned or created successfully for the grade',
+      content: {
+        'application/json': {
+          schema: z.object({ data: GradeSubjectItemSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Grade or subject not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Subject is already assigned to this grade',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/grades/{gradeId}/subjects',
+  tags: ['Subjects'],
+  summary:
+    'List subjects associated with a grade (Super Admin, School Admin, Principal, Class Teacher, or Teacher)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      gradeId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    }),
+    query: z.object({
+      limit: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_PAGE_SIZE)
+        .default(DEFAULT_PAGE_SIZE)
+        .optional(),
+      cursor: z.string().optional().openapi({ example: 'ZXhhbXBsZQ==' }),
+      status: SubjectStatusSchema.optional(),
+      search: z.string().optional().openapi({ example: 'Math' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Paginated list of subjects associated with the grade',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.array(GradeSubjectItemSchema),
+            pageInfo: PageInfoSchema,
+          }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid parameter or query format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Insufficient permissions or wrong school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Grade not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/grades/{gradeId}/subjects/{subjectId}',
+  tags: ['Subjects'],
+  summary: 'Remove subject assignment from a grade (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      gradeId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+      subjectId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    }),
+  },
+  responses: {
+    204: {
+      description: 'Subject unassigned from grade successfully',
+    },
+    400: {
+      description: 'Invalid UUID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Grade, subject, or assignment not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/subjects/{subjectId}',
+  tags: ['Subjects'],
+  summary:
+    'Get master subject by ID (Super Admin, School Admin, Principal, Class Teacher, or Teacher)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      subjectId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Subject details retrieved successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: SubjectSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid subject ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Insufficient permissions or wrong school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Subject not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/subjects/{subjectId}',
+  tags: ['Subjects'],
+  summary: 'Update master subject (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      subjectId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: UpdateSubjectRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Subject updated successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: SubjectSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Subject not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Subject code already exists in this school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/subjects/{subjectId}',
+  tags: ['Subjects'],
+  summary:
+    'Soft-delete master subject and cascade unassign from grades (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      subjectId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    }),
+  },
+  responses: {
+    204: {
+      description: 'Subject soft-deleted successfully',
+    },
+    400: {
+      description: 'Invalid subject ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Subject not found',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
   },

@@ -1,10 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { subjectsService, type SubjectsService } from './subjects.service.js';
-import type {
-  AssignOrCreateSubjectInput,
-  UpdateSubjectInput,
-  ListSubjectsQuery,
-} from './subjects.schemas.js';
+import type { AssignOrCreateSubjectInput, UpdateSubjectInput } from './subjects.schemas.js';
 
 export class SubjectsController {
   constructor(private readonly service: SubjectsService = subjectsService) {}
@@ -33,7 +29,7 @@ export class SubjectsController {
       const gradeId = req.params.gradeId as string;
       const result = await this.service.listSubjectsByGrade(
         gradeId,
-        req.query as unknown as ListSubjectsQuery,
+        req.query,
         req.user?.schoolId,
         req.user?.role,
       );

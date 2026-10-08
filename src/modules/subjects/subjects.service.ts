@@ -17,6 +17,7 @@ import {
   ForbiddenError,
   BadRequestError,
 } from '../../lib/app-error.js';
+import { DEFAULT_PAGE_SIZE } from '../../config/constants.js';
 import {
   decodeCursor,
   buildPaginatedResponse,
@@ -207,24 +208,20 @@ export class SubjectsService {
    */
   async listSubjectsByGrade(
     gradeId: string,
-    query: ListSubjectsQuery,
+    query: Partial<ListSubjectsQuery> = {},
     callerSchoolId?: string | null,
     callerRole?: UserRole,
   ): Promise<PaginatedResult<GradeSubjectItem>> {
     await this.getAndVerifyGradeAccess(gradeId, callerSchoolId, callerRole);
 
+    const limit = query.limit ?? DEFAULT_PAGE_SIZE;
     const cursor = query.cursor ? decodeCursor(query.cursor) : undefined;
-    const rawItems = await this.repo.listSubjectsByGrade(
-      gradeId,
-      query.limit,
-      cursor ?? undefined,
-      {
-        status: query.status,
-        search: query.search,
-      },
-    );
+    const rawItems = await this.repo.listSubjectsByGrade(gradeId, limit, cursor ?? undefined, {
+      status: query.status,
+      search: query.search,
+    });
 
-    return buildPaginatedResponse(rawItems, query.limit, (item) => ({
+    return buildPaginatedResponse(rawItems, limit, (item) => ({
       createdAt: item.createdAt,
       id: item.gradeSubjectId,
     }));

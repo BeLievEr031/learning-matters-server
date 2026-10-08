@@ -305,7 +305,7 @@ describe('Subjects Module API', () => {
       vi.spyOn(gradesRepository, 'findById').mockResolvedValue(sampleGrade);
       vi.spyOn(subjectsRepository, 'findById').mockResolvedValue(sampleSubject);
       vi.spyOn(subjectsRepository, 'findGradeSubject').mockResolvedValue(sampleGradeSubject);
-      vi.spyOn(subjectsRepository, 'removeGradeAssignment').mockResolvedValue(1);
+      vi.spyOn(subjectsRepository, 'removeGradeAssignment').mockResolvedValue(true);
 
       const res = await request(app)
         .delete(`/api/v1/grades/${sampleGrade.id}/subjects/${sampleSubject.id}`)
@@ -334,7 +334,7 @@ describe('Subjects Module API', () => {
     it('soft deletes catalog subject (204) for admin', async () => {
       const app = createApp();
       vi.spyOn(subjectsRepository, 'findById').mockResolvedValue(sampleSubject);
-      vi.spyOn(subjectsRepository, 'softDelete').mockResolvedValue(sampleSubject);
+      vi.spyOn(subjectsRepository, 'softDelete').mockResolvedValue(true);
       vi.spyOn(subjectsRepository, 'cascadeRemoveGradeAssignments').mockResolvedValue(1);
 
       const res = await request(app)

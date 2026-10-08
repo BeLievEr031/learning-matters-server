@@ -319,7 +319,7 @@ describe('SubjectsService', () => {
       vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockGrade);
       vi.spyOn(mockSubjectsRepo, 'findById').mockResolvedValue(mockSubject);
       vi.spyOn(mockSubjectsRepo, 'findGradeSubject').mockResolvedValue(mockGradeSubject);
-      const deleteSpy = vi.spyOn(mockSubjectsRepo, 'removeGradeAssignment').mockResolvedValue(1);
+      const deleteSpy = vi.spyOn(mockSubjectsRepo, 'removeGradeAssignment').mockResolvedValue(true);
 
       await service.removeGradeAssignment(mockGrade.id, mockSubject.id, school1Id, 'admin');
 
@@ -340,7 +340,7 @@ describe('SubjectsService', () => {
   describe('deleteSubject', () => {
     it('soft deletes subject and cascade removes grade assignments', async () => {
       vi.spyOn(mockSubjectsRepo, 'findById').mockResolvedValue(mockSubject);
-      const deleteSpy = vi.spyOn(mockSubjectsRepo, 'softDelete').mockResolvedValue(mockSubject);
+      const deleteSpy = vi.spyOn(mockSubjectsRepo, 'softDelete').mockResolvedValue(true);
       const cascadeSpy = vi
         .spyOn(mockSubjectsRepo, 'cascadeRemoveGradeAssignments')
         .mockResolvedValue(1);

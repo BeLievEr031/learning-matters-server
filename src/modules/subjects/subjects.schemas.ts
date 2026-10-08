@@ -9,7 +9,7 @@ export const assignOrCreateSubjectSchema = z
     name: z.string().min(1, 'Subject name is required').max(255).optional(),
     code: z.string().min(1, 'Subject code is required').max(50).optional(),
     description: z.string().max(1000).optional(),
-    status: z.enum(SUBJECT_STATUSES).default('active'),
+    status: z.enum(SUBJECT_STATUSES).optional(),
   })
   .refine(
     (data) => Boolean(data.subjectId) || Boolean(data.name && data.code),
