@@ -71,6 +71,13 @@
       "when": 1791126000000,
       "tag": "0009_add_teacher_assignments_table",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791129000000,
+      "tag": "0010_add_principals_table",
+      "breakpoints": true
     }
   ]
 }
