@@ -15,7 +15,7 @@ export const principalsController = {
 
   upsertPrincipal: async (req: Request, res: Response): Promise<void> => {
     const schoolId = req.params.schoolId as string;
-    const body = res.locals.validatedBody as UpsertPrincipalInput;
+    const body = req.body as UpsertPrincipalInput;
     const principal = await principalsService.upsertPrincipal(
       schoolId,
       body,
