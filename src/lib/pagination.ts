@@ -122,6 +122,10 @@ export function buildPaginatedResponse<T>(
     }
   }
 
+  const safeTotal = options?.total ?? data.length;
+  const safePage = Math.max(options?.page ?? 1, 1);
+  const totalPages = Math.ceil(safeTotal / clampedLimit) || (data.length > 0 ? 1 : 0);
+
   const result: PaginatedResult<T> = {
     success: true,
     data,
@@ -129,17 +133,13 @@ export function buildPaginatedResponse<T>(
       nextCursor,
       hasMore,
     },
-  };
-
-  if (options?.total !== undefined) {
-    const safePage = Math.max(options.page ?? 1, 1);
-    result.meta = {
-      total: options.total,
+    meta: {
+      total: safeTotal,
       page: safePage,
       limit: clampedLimit,
-      totalPages: Math.ceil(options.total / clampedLimit),
-    };
-  }
+      totalPages,
+    },
+  };
 
   return result;
 }

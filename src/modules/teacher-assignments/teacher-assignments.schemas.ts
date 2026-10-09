@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../../config/constants.js';
 
 export const TEACHER_ASSIGNMENT_STATUSES = ['active', 'inactive'] as const;
+export const TEACHER_ASSIGNMENT_SORT_FIELDS = ['createdAt', 'effectiveDate', 'status'] as const;
 
 export const createTeacherAssignmentSchema = z.object({
   teacherId: z.uuid('Invalid teacher ID format'),
@@ -29,6 +30,9 @@ export const listTeacherAssignmentsQuerySchema = z.object({
   subjectId: z.uuid('Invalid subject ID filter').optional(),
   status: z.enum(TEACHER_ASSIGNMENT_STATUSES).optional(),
   schoolId: z.uuid('Invalid school ID filter').optional(),
+  search: z.string().trim().max(100).optional(),
+  sortBy: z.enum(TEACHER_ASSIGNMENT_SORT_FIELDS).default('createdAt').optional(),
+  sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),
 });
 
 export const assignmentIdParamSchema = z.object({

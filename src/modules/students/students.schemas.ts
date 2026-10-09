@@ -47,12 +47,22 @@ export const transferStudentSchema = z.object({
   targetGradeId: z.uuid('Invalid target grade ID format'),
 });
 
+export const STUDENT_SORT_FIELDS = [
+  'firstName',
+  'lastName',
+  'admissionNumber',
+  'createdAt',
+  'status',
+] as const;
+
 export const listStudentsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   cursor: z.string().optional(),
   status: z.enum(STUDENT_STATUSES).optional(),
   gender: z.enum(STUDENT_GENDERS).optional(),
   search: z.string().optional(),
+  sortBy: z.enum(STUDENT_SORT_FIELDS).default('createdAt').optional(),
+  sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),
 });
 
 export const studentIdParamSchema = z.object({

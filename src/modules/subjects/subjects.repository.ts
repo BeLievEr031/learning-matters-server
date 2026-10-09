@@ -1,4 +1,4 @@
-import { eq, isNull, and, or, lt, desc, ilike } from 'drizzle-orm';
+import { eq, isNull, and, or, lt, desc, asc, ilike } from 'drizzle-orm';
 import { db } from '../../db/pool.js';
 import {
   subjects,
@@ -9,10 +9,13 @@ import {
   type GradeSubjectStatus,
 } from '../../db/schema/subjects.js';
 import type { CursorPayload } from '../../lib/pagination.js';
+import type { SUBJECT_SORT_FIELDS } from './subjects.schemas.js';
 
 export interface SubjectFilters {
   status?: SubjectStatus | undefined;
   search?: string | undefined;
+  sortBy?: (typeof SUBJECT_SORT_FIELDS)[number] | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
 }
 
 export interface CreateSubjectData {
@@ -239,6 +242,18 @@ export class SubjectsRepository {
       }
     }
 
+    let primaryOrder = desc(gradeSubjects.createdAt);
+    if (filters?.sortBy === 'name') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(subjects.name) : desc(subjects.name);
+    } else if (filters?.sortBy === 'code') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(subjects.code) : desc(subjects.code);
+    } else if (filters?.sortBy === 'status') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(subjects.status) : desc(subjects.status);
+    } else if (filters?.sortBy === 'createdAt') {
+      primaryOrder =
+        filters.sortOrder === 'asc' ? asc(gradeSubjects.createdAt) : desc(gradeSubjects.createdAt);
+    }
+
     const rows = await db
       .select({
         id: subjects.id,
@@ -256,7 +271,7 @@ export class SubjectsRepository {
       .from(gradeSubjects)
       .innerJoin(subjects, eq(gradeSubjects.subjectId, subjects.id))
       .where(and(...conditions))
-      .orderBy(desc(gradeSubjects.createdAt), desc(gradeSubjects.id))
+      .orderBy(primaryOrder, desc(gradeSubjects.id))
       .limit(limit + 1);
 
     return rows;

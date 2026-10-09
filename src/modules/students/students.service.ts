@@ -133,6 +133,8 @@ export class StudentsService {
       status: query.status,
       gender: query.gender,
       search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
     });
 
     return buildPaginatedResponse(rawItems, limit, (item) => ({

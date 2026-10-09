@@ -1,4 +1,4 @@
-import { eq, isNull, and, or, lt, desc, ilike, sql } from 'drizzle-orm';
+import { eq, isNull, and, or, lt, desc, asc, ilike, sql } from 'drizzle-orm';
 import { db } from '../../db/pool.js';
 import {
   students,
@@ -7,11 +7,14 @@ import {
   type StudentGender,
 } from '../../db/schema/students.js';
 import type { CursorPayload } from '../../lib/pagination.js';
+import type { STUDENT_SORT_FIELDS } from './students.schemas.js';
 
 export interface StudentFilters {
   status?: StudentStatus | undefined;
   gender?: StudentGender | undefined;
   search?: string | undefined;
+  sortBy?: (typeof STUDENT_SORT_FIELDS)[number] | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
 }
 
 export interface CreateStudentData {
@@ -240,11 +243,29 @@ export class StudentsRepository {
       }
     }
 
+    let primaryOrder = desc(students.createdAt);
+    if (filters?.sortBy === 'firstName') {
+      primaryOrder =
+        filters.sortOrder === 'asc' ? asc(students.firstName) : desc(students.firstName);
+    } else if (filters?.sortBy === 'lastName') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(students.lastName) : desc(students.lastName);
+    } else if (filters?.sortBy === 'admissionNumber') {
+      primaryOrder =
+        filters.sortOrder === 'asc'
+          ? asc(students.admissionNumber)
+          : desc(students.admissionNumber);
+    } else if (filters?.sortBy === 'status') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(students.status) : desc(students.status);
+    } else if (filters?.sortBy === 'createdAt') {
+      primaryOrder =
+        filters.sortOrder === 'asc' ? asc(students.createdAt) : desc(students.createdAt);
+    }
+
     return db
       .select()
       .from(students)
       .where(and(...conditions))
-      .orderBy(desc(students.createdAt), desc(students.id))
+      .orderBy(primaryOrder, desc(students.id))
       .limit(limit + 1);
   }
 }

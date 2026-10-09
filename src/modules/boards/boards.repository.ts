@@ -1,11 +1,14 @@
-import { eq, isNull, and, or, lt, desc, ilike } from 'drizzle-orm';
+import { eq, isNull, and, or, lt, desc, asc, ilike } from 'drizzle-orm';
 import { db } from '../../db/pool.js';
 import { boards, type Board, type BoardStatus } from '../../db/schema/boards.js';
 import type { CursorPayload } from '../../lib/pagination.js';
+import type { BOARD_SORT_FIELDS } from './boards.schemas.js';
 
 export interface BoardFilters {
   status?: BoardStatus | undefined;
   search?: string | undefined;
+  sortBy?: (typeof BOARD_SORT_FIELDS)[number] | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
 }
 
 export interface CreateBoardData {
@@ -165,11 +168,22 @@ export class BoardsRepository {
       }
     }
 
+    let primaryOrder = desc(boards.createdAt);
+    if (filters?.sortBy === 'name') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(boards.name) : desc(boards.name);
+    } else if (filters?.sortBy === 'code') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(boards.code) : desc(boards.code);
+    } else if (filters?.sortBy === 'status') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(boards.status) : desc(boards.status);
+    } else if (filters?.sortBy === 'createdAt') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(boards.createdAt) : desc(boards.createdAt);
+    }
+
     return db
       .select()
       .from(boards)
       .where(and(...conditions))
-      .orderBy(desc(boards.createdAt), desc(boards.id))
+      .orderBy(primaryOrder, desc(boards.id))
       .limit(limit + 1);
   }
 }

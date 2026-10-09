@@ -1,11 +1,14 @@
-import { eq, isNull, and, or, lt, desc, ilike } from 'drizzle-orm';
+import { eq, isNull, and, or, lt, desc, asc, ilike } from 'drizzle-orm';
 import { db } from '../../db/pool.js';
 import { schools, type School, type SchoolStatus } from '../../db/schema/schools.js';
 import type { CursorPayload } from '../../lib/pagination.js';
+import type { SCHOOL_SORT_FIELDS } from './schools.schemas.js';
 
 export interface SchoolFilters {
   status?: SchoolStatus | undefined;
   search?: string | undefined;
+  sortBy?: (typeof SCHOOL_SORT_FIELDS)[number] | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
 }
 
 export interface CreateSchoolData {
@@ -196,11 +199,22 @@ export class SchoolsRepository {
       }
     }
 
+    let primaryOrder = desc(schools.createdAt);
+    if (filters?.sortBy === 'name') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(schools.name) : desc(schools.name);
+    } else if (filters?.sortBy === 'code') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(schools.code) : desc(schools.code);
+    } else if (filters?.sortBy === 'status') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(schools.status) : desc(schools.status);
+    } else if (filters?.sortBy === 'createdAt') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(schools.createdAt) : desc(schools.createdAt);
+    }
+
     return db
       .select()
       .from(schools)
       .where(and(...conditions))
-      .orderBy(desc(schools.createdAt), desc(schools.id))
+      .orderBy(primaryOrder, desc(schools.id))
       .limit(limit + 1);
   }
 }

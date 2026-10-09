@@ -86,6 +86,8 @@ export class SchoolsService {
     const rawItems = await this.repo.list(query.limit, cursor ?? undefined, {
       status: query.status,
       search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
     });
 
     return buildPaginatedResponse(rawItems, query.limit, (school) => ({

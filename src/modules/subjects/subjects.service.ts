@@ -219,6 +219,8 @@ export class SubjectsService {
     const rawItems = await this.repo.listSubjectsByGrade(gradeId, limit, cursor ?? undefined, {
       status: query.status,
       search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
     });
 
     return buildPaginatedResponse(rawItems, limit, (item) => ({

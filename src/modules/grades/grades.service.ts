@@ -194,6 +194,8 @@ export class GradesService {
       section: query.section,
       gradeNumber: query.gradeNumber,
       search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
     });
 
     return buildPaginatedResponse(rawItems, query.limit, (grade) => ({

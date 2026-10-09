@@ -17,11 +17,15 @@ export const updateBoardSchema = z.object({
   status: z.enum(BOARD_STATUSES).optional(),
 });
 
+export const BOARD_SORT_FIELDS = ['name', 'code', 'createdAt', 'status'] as const;
+
 export const listBoardsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   cursor: z.string().optional(),
   status: z.enum(BOARD_STATUSES).optional(),
   search: z.string().optional(),
+  sortBy: z.enum(BOARD_SORT_FIELDS).default('createdAt').optional(),
+  sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),
 });
 
 export const boardIdParamSchema = z.object({

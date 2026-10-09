@@ -27,11 +27,23 @@ export const updateTeacherSchema = z.object({
   status: z.enum(TEACHER_STATUSES).optional(),
 });
 
+export const TEACHER_SORT_FIELDS = [
+  'firstName',
+  'lastName',
+  'employeeId',
+  'email',
+  'joiningDate',
+  'createdAt',
+  'status',
+] as const;
+
 export const listTeachersQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   cursor: z.string().optional(),
   status: z.enum(TEACHER_STATUSES).optional(),
   search: z.string().optional(),
+  sortBy: z.enum(TEACHER_SORT_FIELDS).default('createdAt').optional(),
+  sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),
 });
 
 export const teacherIdParamSchema = z.object({

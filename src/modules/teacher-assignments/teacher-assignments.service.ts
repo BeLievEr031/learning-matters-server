@@ -134,6 +134,9 @@ export class TeacherAssignmentsService {
       gradeId: query.gradeId,
       subjectId: query.subjectId,
       status: query.status,
+      search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
     });
 
     return buildPaginatedResponse(rawItems, limit, (item) => ({

@@ -1,13 +1,16 @@
-import { eq, isNull, and, or, lt, desc, ilike } from 'drizzle-orm';
+import { eq, isNull, and, or, lt, desc, asc, ilike } from 'drizzle-orm';
 import { db } from '../../db/pool.js';
 import { grades, type Grade, type GradeStatus } from '../../db/schema/grades.js';
 import type { CursorPayload } from '../../lib/pagination.js';
+import type { GRADE_SORT_FIELDS } from './grades.schemas.js';
 
 export interface GradeFilters {
   status?: GradeStatus | undefined;
   section?: string | undefined;
   gradeNumber?: number | undefined;
   search?: string | undefined;
+  sortBy?: (typeof GRADE_SORT_FIELDS)[number] | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
 }
 
 export interface CreateGradeData {
@@ -213,11 +216,25 @@ export class GradesRepository {
       }
     }
 
+    let primaryOrder = desc(grades.createdAt);
+    if (filters?.sortBy === 'name') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(grades.name) : desc(grades.name);
+    } else if (filters?.sortBy === 'code') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(grades.code) : desc(grades.code);
+    } else if (filters?.sortBy === 'gradeNumber') {
+      primaryOrder =
+        filters.sortOrder === 'asc' ? asc(grades.gradeNumber) : desc(grades.gradeNumber);
+    } else if (filters?.sortBy === 'status') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(grades.status) : desc(grades.status);
+    } else if (filters?.sortBy === 'createdAt') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(grades.createdAt) : desc(grades.createdAt);
+    }
+
     return db
       .select()
       .from(grades)
       .where(and(...conditions))
-      .orderBy(desc(grades.createdAt), desc(grades.id))
+      .orderBy(primaryOrder, desc(grades.id))
       .limit(limit + 1);
   }
 }

@@ -21,6 +21,8 @@ export const updateGradeSchema = z.object({
   status: z.enum(GRADE_STATUSES).optional(),
 });
 
+export const GRADE_SORT_FIELDS = ['name', 'code', 'gradeNumber', 'createdAt', 'status'] as const;
+
 export const listGradesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   cursor: z.string().optional(),
@@ -28,6 +30,8 @@ export const listGradesQuerySchema = z.object({
   section: z.string().optional(),
   gradeNumber: z.coerce.number().int().optional(),
   search: z.string().optional(),
+  sortBy: z.enum(GRADE_SORT_FIELDS).default('createdAt').optional(),
+  sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),
 });
 
 export const gradeIdParamSchema = z.object({

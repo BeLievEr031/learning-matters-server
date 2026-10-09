@@ -124,6 +124,21 @@ describe('Pagination Utilities', () => {
         totalPages: 25,
       });
     });
+
+    it('defaults meta total to data.length when options are omitted', () => {
+      const result = buildPaginatedResponse(items.slice(0, 2), 2, (item) => ({
+        id: item.id,
+        createdAt: item.createdAt,
+      }));
+
+      expect(result.success).toBe(true);
+      expect(result.meta).toEqual({
+        total: 2,
+        page: 1,
+        limit: 2,
+        totalPages: 1,
+      });
+    });
   });
 
   describe('buildOffsetPaginatedResponse', () => {

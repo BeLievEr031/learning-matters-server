@@ -1,4 +1,4 @@
-import { eq, isNull, and, or, lt, desc, type SQL } from 'drizzle-orm';
+import { eq, isNull, and, or, lt, desc, asc, ilike, type SQL } from 'drizzle-orm';
 import { db } from '../../db/pool.js';
 import {
   teacherAssignments,
@@ -9,6 +9,7 @@ import { teachers } from '../../db/schema/teachers.js';
 import { grades } from '../../db/schema/grades.js';
 import { subjects } from '../../db/schema/subjects.js';
 import type { CursorPayload } from '../../lib/pagination.js';
+import type { TEACHER_ASSIGNMENT_SORT_FIELDS } from './teacher-assignments.schemas.js';
 
 export interface TeacherAssignmentFilters {
   schoolId?: string | undefined;
@@ -16,6 +17,9 @@ export interface TeacherAssignmentFilters {
   gradeId?: string | undefined;
   subjectId?: string | undefined;
   status?: TeacherAssignmentStatus | undefined;
+  search?: string | undefined;
+  sortBy?: (typeof TEACHER_ASSIGNMENT_SORT_FIELDS)[number] | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
 }
 
 export interface CreateTeacherAssignmentData {
@@ -201,6 +205,23 @@ export class TeacherAssignmentsRepository {
       conditions.push(eq(teacherAssignments.status, filters.status));
     }
 
+    if (filters?.search) {
+      const searchPattern = `%${filters.search.trim()}%`;
+      const searchCondition = or(
+        ilike(teachers.firstName, searchPattern),
+        ilike(teachers.lastName, searchPattern),
+        ilike(teachers.email, searchPattern),
+        ilike(teachers.employeeId, searchPattern),
+        ilike(grades.name, searchPattern),
+        ilike(grades.code, searchPattern),
+        ilike(subjects.name, searchPattern),
+        ilike(subjects.code, searchPattern),
+      );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
+    }
+
     if (cursor) {
       const cursorCondition = or(
         lt(teacherAssignments.createdAt, cursor.createdAt),
@@ -212,6 +233,20 @@ export class TeacherAssignmentsRepository {
       if (cursorCondition) {
         conditions.push(cursorCondition);
       }
+    }
+
+    const sortField = filters?.sortBy ?? 'createdAt';
+    const isAsc = filters?.sortOrder === 'asc';
+    let primaryOrder = isAsc
+      ? asc(teacherAssignments.createdAt)
+      : desc(teacherAssignments.createdAt);
+
+    if (sortField === 'effectiveDate') {
+      primaryOrder = isAsc
+        ? asc(teacherAssignments.effectiveDate)
+        : desc(teacherAssignments.effectiveDate);
+    } else if (sortField === 'status') {
+      primaryOrder = isAsc ? asc(teacherAssignments.status) : desc(teacherAssignments.status);
     }
 
     return db
@@ -241,7 +276,7 @@ export class TeacherAssignmentsRepository {
       .leftJoin(grades, eq(teacherAssignments.gradeId, grades.id))
       .leftJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
       .where(and(...conditions))
-      .orderBy(desc(teacherAssignments.createdAt), desc(teacherAssignments.id))
+      .orderBy(primaryOrder, desc(teacherAssignments.id))
       .limit(limit + 1);
   }
 

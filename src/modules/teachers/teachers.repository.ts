@@ -1,11 +1,14 @@
-import { eq, isNull, and, or, lt, desc, ilike, sql } from 'drizzle-orm';
+import { eq, isNull, and, or, lt, desc, asc, ilike, sql } from 'drizzle-orm';
 import { db } from '../../db/pool.js';
 import { teachers, type Teacher, type TeacherStatus } from '../../db/schema/teachers.js';
 import type { CursorPayload } from '../../lib/pagination.js';
+import type { TEACHER_SORT_FIELDS } from './teachers.schemas.js';
 
 export interface TeacherFilters {
   status?: TeacherStatus | undefined;
   search?: string | undefined;
+  sortBy?: (typeof TEACHER_SORT_FIELDS)[number] | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
 }
 
 export interface CreateTeacherData {
@@ -226,11 +229,29 @@ export class TeachersRepository {
       }
     }
 
+    const sortField = filters?.sortBy ?? 'createdAt';
+    const isAsc = filters?.sortOrder === 'asc';
+    let primaryOrder = isAsc ? asc(teachers.createdAt) : desc(teachers.createdAt);
+
+    if (sortField === 'firstName') {
+      primaryOrder = isAsc ? asc(teachers.firstName) : desc(teachers.firstName);
+    } else if (sortField === 'lastName') {
+      primaryOrder = isAsc ? asc(teachers.lastName) : desc(teachers.lastName);
+    } else if (sortField === 'email') {
+      primaryOrder = isAsc ? asc(teachers.email) : desc(teachers.email);
+    } else if (sortField === 'employeeId') {
+      primaryOrder = isAsc ? asc(teachers.employeeId) : desc(teachers.employeeId);
+    } else if (sortField === 'joiningDate') {
+      primaryOrder = isAsc ? asc(teachers.joiningDate) : desc(teachers.joiningDate);
+    } else if (sortField === 'status') {
+      primaryOrder = isAsc ? asc(teachers.status) : desc(teachers.status);
+    }
+
     return db
       .select()
       .from(teachers)
       .where(and(...conditions))
-      .orderBy(desc(teachers.createdAt), desc(teachers.id))
+      .orderBy(primaryOrder, desc(teachers.id))
       .limit(limit + 1);
   }
 }

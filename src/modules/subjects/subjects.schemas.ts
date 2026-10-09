@@ -30,11 +30,15 @@ export const updateSubjectSchema = z.object({
   status: z.enum(SUBJECT_STATUSES).optional(),
 });
 
+export const SUBJECT_SORT_FIELDS = ['name', 'code', 'createdAt', 'status'] as const;
+
 export const listSubjectsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   cursor: z.string().optional(),
   status: z.enum(SUBJECT_STATUSES).optional(),
   search: z.string().optional(),
+  sortBy: z.enum(SUBJECT_SORT_FIELDS).default('createdAt').optional(),
+  sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),
 });
 
 export const subjectIdParamSchema = z.object({
