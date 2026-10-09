@@ -9,6 +9,7 @@ import {
   listGradesQuerySchema,
   gradeIdParamSchema,
   boardIdParamSchema,
+  assignClassTeacherSchema,
 } from './grades.schemas.js';
 
 /**
@@ -64,6 +65,24 @@ gradesRouter.patch(
   authorize('super_admin', 'admin'),
   validate({ params: gradeIdParamSchema, body: updateGradeSchema }),
   gradesController.updateGrade,
+);
+
+// Assign class teacher (super_admin, admin, principal)
+gradesRouter.put(
+  '/:gradeId/class-teacher',
+  authenticate,
+  authorize('super_admin', 'admin', 'principal'),
+  validate({ params: gradeIdParamSchema, body: assignClassTeacherSchema }),
+  gradesController.assignClassTeacher,
+);
+
+// Get assigned class teacher
+gradesRouter.get(
+  '/:gradeId/class-teacher',
+  authenticate,
+  authorize('super_admin', 'admin', 'principal', 'class_teacher', 'teacher'),
+  validate({ params: gradeIdParamSchema }),
+  gradesController.getClassTeacher,
 );
 
 // Delete grade (super_admin or own-school admin, soft-delete)

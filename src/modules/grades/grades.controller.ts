@@ -1,6 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
 import { gradesService, type GradesService } from './grades.service.js';
-import type { CreateGradeInput, UpdateGradeInput, ListGradesQuery } from './grades.schemas.js';
+import type {
+  CreateGradeInput,
+  UpdateGradeInput,
+  ListGradesQuery,
+  AssignClassTeacherInput,
+} from './grades.schemas.js';
 
 export class GradesController {
   constructor(private readonly service: GradesService = gradesService) {}
@@ -65,6 +70,36 @@ export class GradesController {
       const gradeId = req.params.gradeId as string;
       await this.service.deleteGrade(gradeId, req.user?.schoolId, req.user?.role);
       res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  assignClassTeacher = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const gradeId = req.params.gradeId as string;
+      const body = req.body as AssignClassTeacherInput;
+      const grade = await this.service.assignClassTeacher(
+        gradeId,
+        body.teacherId,
+        req.user?.schoolId,
+        req.user?.role,
+      );
+      res.status(200).json({ data: grade });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getClassTeacher = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const gradeId = req.params.gradeId as string;
+      const teacher = await this.service.getClassTeacher(
+        gradeId,
+        req.user?.schoolId,
+        req.user?.role,
+      );
+      res.status(200).json({ data: teacher });
     } catch (err) {
       next(err);
     }

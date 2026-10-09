@@ -1,9 +1,16 @@
 import { gradesRepository, type GradesRepository } from './grades.repository.js';
 import { boardsRepository, type BoardsRepository } from '../boards/boards.repository.js';
+import { teachersRepository, type TeachersRepository } from '../teachers/teachers.repository.js';
 import type { Grade } from '../../db/schema/grades.js';
+import type { Teacher } from '../../db/schema/teachers.js';
 import type { CreateGradeInput, UpdateGradeInput, ListGradesQuery } from './grades.schemas.js';
 import type { UserRole } from '../../db/schema/users.js';
-import { NotFoundError, ConflictError, ForbiddenError } from '../../lib/app-error.js';
+import {
+  NotFoundError,
+  ConflictError,
+  ForbiddenError,
+  BadRequestError,
+} from '../../lib/app-error.js';
 import {
   decodeCursor,
   buildPaginatedResponse,
@@ -14,6 +21,7 @@ export class GradesService {
   constructor(
     private readonly repo: GradesRepository = gradesRepository,
     private readonly boardsRepo: BoardsRepository = boardsRepository,
+    private readonly teachersRepo: TeachersRepository = teachersRepository,
   ) {}
 
   /**
@@ -192,6 +200,62 @@ export class GradesService {
       createdAt: grade.createdAt,
       id: grade.id,
     }));
+  }
+
+  /**
+   * Assign or remove a class teacher for a grade.
+   */
+  async assignClassTeacher(
+    gradeId: string,
+    teacherId: string | null,
+    callerSchoolId?: string | null,
+    callerRole?: UserRole,
+  ): Promise<Grade> {
+    const grade = await this.getAndVerifyGradeAccess(gradeId, callerSchoolId, callerRole);
+
+    if (grade.status !== 'active') {
+      throw new BadRequestError('Cannot assign class teacher to an inactive grade');
+    }
+
+    if (teacherId !== null) {
+      const teacher = await this.teachersRepo.findById(teacherId);
+      if (!teacher) {
+        throw new NotFoundError('Teacher not found');
+      }
+
+      if (teacher.schoolId !== grade.schoolId) {
+        throw new BadRequestError('Teacher must belong to the same school as the grade');
+      }
+
+      if (teacher.status !== 'active') {
+        throw new BadRequestError('Teacher is not active');
+      }
+    }
+
+    const updated = await this.repo.setClassTeacher(gradeId, teacherId);
+    if (!updated) {
+      throw new NotFoundError('Grade not found');
+    }
+
+    return updated;
+  }
+
+  /**
+   * Retrieve the class teacher currently assigned to a grade.
+   */
+  async getClassTeacher(
+    gradeId: string,
+    callerSchoolId?: string | null,
+    callerRole?: UserRole,
+  ): Promise<Teacher | null> {
+    const grade = await this.getAndVerifyGradeAccess(gradeId, callerSchoolId, callerRole);
+
+    if (!grade.classTeacherId) {
+      return null;
+    }
+
+    const teacher = await this.teachersRepo.findById(grade.classTeacherId);
+    return teacher;
   }
 
   /**

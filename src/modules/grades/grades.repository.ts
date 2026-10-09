@@ -159,6 +159,19 @@ export class GradesRepository {
   }
 
   /**
+   * Assign or remove the class teacher for a grade.
+   */
+  async setClassTeacher(gradeId: string, teacherId: string | null): Promise<Grade | null> {
+    const rows = await db
+      .update(grades)
+      .set({ classTeacherId: teacherId, updatedAt: new Date() })
+      .where(and(eq(grades.id, gradeId), isNull(grades.deletedAt)))
+      .returning();
+
+    return rows[0] ?? null;
+  }
+
+  /**
    * Cursor-paginated list of grades for a board ordered by (createdAt DESC, id DESC).
    * Fetches (limit + 1) rows to determine hasMore and nextCursor.
    */

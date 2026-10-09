@@ -2,14 +2,22 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GradesService } from './grades.service.js';
 import { GradesRepository } from './grades.repository.js';
 import { BoardsRepository } from '../boards/boards.repository.js';
+import { TeachersRepository } from '../teachers/teachers.repository.js';
 import type { Grade } from '../../db/schema/grades.js';
 import type { Board } from '../../db/schema/boards.js';
-import { ConflictError, NotFoundError, ForbiddenError } from '../../lib/app-error.js';
+import type { Teacher } from '../../db/schema/teachers.js';
+import {
+  ConflictError,
+  NotFoundError,
+  ForbiddenError,
+  BadRequestError,
+} from '../../lib/app-error.js';
 
 describe('GradesService', () => {
   let service: GradesService;
   let mockGradesRepo: GradesRepository;
   let mockBoardsRepo: BoardsRepository;
+  let mockTeachersRepo: TeachersRepository;
 
   const mockBoard: Board = {
     id: '22222222-2222-4222-a222-222222222222',
@@ -17,6 +25,23 @@ describe('GradesService', () => {
     name: 'Central Board of Secondary Education',
     code: 'CBSE',
     description: 'National education board',
+    status: 'active',
+    createdAt: new Date('2026-01-01T00:00:00Z'),
+    updatedAt: new Date('2026-01-01T00:00:00Z'),
+    deletedAt: null,
+  };
+
+  const mockTeacher: Teacher = {
+    id: '88888888-8888-4888-a888-888888888888',
+    schoolId: mockBoard.schoolId,
+    userId: null,
+    employeeId: 'EMP-001',
+    firstName: 'Edna',
+    lastName: 'Krabappel',
+    email: 'edna@springfield.edu',
+    phone: null,
+    joiningDate: new Date('2025-08-01T00:00:00Z'),
+    qualification: 'M.Ed.',
     status: 'active',
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -42,7 +67,8 @@ describe('GradesService', () => {
   beforeEach(() => {
     mockGradesRepo = new GradesRepository();
     mockBoardsRepo = new BoardsRepository();
-    service = new GradesService(mockGradesRepo, mockBoardsRepo);
+    mockTeachersRepo = new TeachersRepository();
+    service = new GradesService(mockGradesRepo, mockBoardsRepo, mockTeachersRepo);
   });
 
   describe('createGrade', () => {
@@ -267,6 +293,140 @@ describe('GradesService', () => {
       await expect(
         service.listGradesByBoard(mockBoard.id, { limit: 10 }, 'other-school', 'admin'),
       ).rejects.toThrow(ForbiddenError);
+    });
+  });
+
+  describe('assignClassTeacher', () => {
+    it('assigns an active teacher from the same school successfully', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockGrade);
+      vi.spyOn(mockTeachersRepo, 'findById').mockResolvedValue(mockTeacher);
+      const updatedGrade = { ...mockGrade, classTeacherId: mockTeacher.id };
+      const setSpy = vi.spyOn(mockGradesRepo, 'setClassTeacher').mockResolvedValue(updatedGrade);
+
+      const result = await service.assignClassTeacher(
+        mockGrade.id,
+        mockTeacher.id,
+        mockBoard.schoolId,
+        'admin',
+      );
+
+      expect(result.classTeacherId).toBe(mockTeacher.id);
+      expect(setSpy).toHaveBeenCalledWith(mockGrade.id, mockTeacher.id);
+    });
+
+    it('unassigns class teacher when passing null', async () => {
+      const gradeWithTeacher = { ...mockGrade, classTeacherId: mockTeacher.id };
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(gradeWithTeacher);
+      const setSpy = vi.spyOn(mockGradesRepo, 'setClassTeacher').mockResolvedValue(mockGrade);
+
+      const result = await service.assignClassTeacher(
+        mockGrade.id,
+        null,
+        mockBoard.schoolId,
+        'admin',
+      );
+
+      expect(result.classTeacherId).toBeNull();
+      expect(setSpy).toHaveBeenCalledWith(mockGrade.id, null);
+    });
+
+    it('throws NotFoundError if grade does not exist', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(null);
+
+      await expect(
+        service.assignClassTeacher('non-existent', mockTeacher.id, mockBoard.schoolId, 'admin'),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('throws ForbiddenError if caller belongs to another school', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockGrade);
+
+      await expect(
+        service.assignClassTeacher(mockGrade.id, mockTeacher.id, 'other-school', 'admin'),
+      ).rejects.toThrow(ForbiddenError);
+    });
+
+    it('throws BadRequestError if grade is inactive', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue({
+        ...mockGrade,
+        status: 'inactive',
+      });
+
+      await expect(
+        service.assignClassTeacher(mockGrade.id, mockTeacher.id, mockBoard.schoolId, 'admin'),
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('throws NotFoundError if teacher does not exist', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockGrade);
+      vi.spyOn(mockTeachersRepo, 'findById').mockResolvedValue(null);
+
+      await expect(
+        service.assignClassTeacher(
+          mockGrade.id,
+          'non-existent-teacher',
+          mockBoard.schoolId,
+          'admin',
+        ),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('throws BadRequestError if teacher belongs to a different school', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockGrade);
+      vi.spyOn(mockTeachersRepo, 'findById').mockResolvedValue({
+        ...mockTeacher,
+        schoolId: 'different-school',
+      });
+
+      await expect(
+        service.assignClassTeacher(mockGrade.id, mockTeacher.id, mockBoard.schoolId, 'admin'),
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('throws BadRequestError if teacher is inactive', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockGrade);
+      vi.spyOn(mockTeachersRepo, 'findById').mockResolvedValue({
+        ...mockTeacher,
+        status: 'inactive',
+      });
+
+      await expect(
+        service.assignClassTeacher(mockGrade.id, mockTeacher.id, mockBoard.schoolId, 'admin'),
+      ).rejects.toThrow(BadRequestError);
+    });
+  });
+
+  describe('getClassTeacher', () => {
+    it('returns null if grade has no assigned class teacher', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockGrade);
+
+      const result = await service.getClassTeacher(mockGrade.id, mockBoard.schoolId, 'admin');
+      expect(result).toBeNull();
+    });
+
+    it('returns teacher if grade has an assigned class teacher', async () => {
+      const gradeWithTeacher = { ...mockGrade, classTeacherId: mockTeacher.id };
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(gradeWithTeacher);
+      vi.spyOn(mockTeachersRepo, 'findById').mockResolvedValue(mockTeacher);
+
+      const result = await service.getClassTeacher(mockGrade.id, mockBoard.schoolId, 'admin');
+      expect(result).toEqual(mockTeacher);
+    });
+
+    it('throws NotFoundError if grade does not exist', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(null);
+
+      await expect(
+        service.getClassTeacher('non-existent', mockBoard.schoolId, 'admin'),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('throws ForbiddenError if caller belongs to another school', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockGrade);
+
+      await expect(service.getClassTeacher(mockGrade.id, 'other-school', 'admin')).rejects.toThrow(
+        ForbiddenError,
+      );
     });
   });
 });
