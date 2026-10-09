@@ -22,6 +22,7 @@ describe('Subjects Module API', () => {
     gradeNumber: 10,
     section: 'A',
     capacity: 40,
+    classTeacherId: null,
     status: 'active',
     createdAt: new Date('2026-01-01T12:00:00Z'),
     updatedAt: new Date('2026-01-01T12:00:00Z'),
