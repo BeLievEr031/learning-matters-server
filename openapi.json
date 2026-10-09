@@ -551,6 +551,33 @@
           "code"
         ]
       },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "example": 42
+          },
+          "page": {
+            "type": "integer",
+            "example": 1
+          },
+          "limit": {
+            "type": "integer",
+            "example": 20
+          },
+          "totalPages": {
+            "type": "integer",
+            "example": 3
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "limit",
+          "totalPages"
+        ]
+      },
       "UpdateSchoolRequest": {
         "type": "object",
         "properties": {
@@ -3061,6 +3088,36 @@
             "required": false,
             "name": "search",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "name",
+                "code",
+                "status",
+                "city",
+                "state",
+                "createdAt"
+              ],
+              "example": "createdAt"
+            },
+            "required": false,
+            "name": "sortBy",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "example": "desc"
+            },
+            "required": false,
+            "name": "sortOrder",
+            "in": "query"
           }
         ],
         "responses": {
@@ -3079,6 +3136,9 @@
                     },
                     "pageInfo": {
                       "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
                     }
                   },
                   "required": [
@@ -3728,6 +3788,34 @@
             "required": false,
             "name": "search",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "name",
+                "code",
+                "status",
+                "createdAt"
+              ],
+              "example": "createdAt"
+            },
+            "required": false,
+            "name": "sortBy",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "example": "desc"
+            },
+            "required": false,
+            "name": "sortOrder",
+            "in": "query"
           }
         ],
         "responses": {
@@ -3746,6 +3834,9 @@
                     },
                     "pageInfo": {
                       "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
                     }
                   },
                   "required": [
@@ -4051,6 +4142,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Cannot delete board with active grades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4235,6 +4336,35 @@
             "required": false,
             "name": "search",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "name",
+                "code",
+                "gradeNumber",
+                "status",
+                "createdAt"
+              ],
+              "example": "createdAt"
+            },
+            "required": false,
+            "name": "sortBy",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "example": "desc"
+            },
+            "required": false,
+            "name": "sortOrder",
+            "in": "query"
           }
         ],
         "responses": {
@@ -4253,6 +4383,9 @@
                     },
                     "pageInfo": {
                       "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
                     }
                   },
                   "required": [
@@ -4560,7 +4693,7 @@
             }
           },
           "409": {
-            "description": "Cannot delete grade with active enrolled students",
+            "description": "Cannot delete grade with active enrolled students or active teacher assignments",
             "content": {
               "application/json": {
                 "schema": {
@@ -4913,6 +5046,34 @@
             "required": false,
             "name": "search",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "name",
+                "code",
+                "status",
+                "createdAt"
+              ],
+              "example": "createdAt"
+            },
+            "required": false,
+            "name": "sortBy",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "example": "desc"
+            },
+            "required": false,
+            "name": "sortOrder",
+            "in": "query"
           }
         ],
         "responses": {
@@ -4931,6 +5092,9 @@
                     },
                     "pageInfo": {
                       "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
                     }
                   },
                   "required": [
@@ -5316,6 +5480,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Cannot delete subject with active teacher assignments or active grade assignments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -5481,6 +5655,37 @@
             "required": false,
             "name": "search",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "firstName",
+                "lastName",
+                "employeeId",
+                "email",
+                "joiningDate",
+                "createdAt",
+                "status"
+              ],
+              "example": "createdAt"
+            },
+            "required": false,
+            "name": "sortBy",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "example": "desc"
+            },
+            "required": false,
+            "name": "sortOrder",
+            "in": "query"
           }
         ],
         "responses": {
@@ -5499,6 +5704,9 @@
                     },
                     "pageInfo": {
                       "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
                     }
                   },
                   "required": [
@@ -5804,6 +6012,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Cannot delete teacher with active assignments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -5974,6 +6192,35 @@
             "required": false,
             "name": "search",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "firstName",
+                "lastName",
+                "admissionNumber",
+                "createdAt",
+                "status"
+              ],
+              "example": "createdAt"
+            },
+            "required": false,
+            "name": "sortBy",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "example": "desc"
+            },
+            "required": false,
+            "name": "sortOrder",
+            "in": "query"
           }
         ],
         "responses": {
@@ -5992,6 +6239,9 @@
                     },
                     "pageInfo": {
                       "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
                     }
                   },
                   "required": [
@@ -6558,6 +6808,42 @@
             "required": false,
             "name": "schoolId",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "Edna"
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "createdAt",
+                "effectiveDate",
+                "status"
+              ],
+              "example": "createdAt"
+            },
+            "required": false,
+            "name": "sortBy",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "example": "desc"
+            },
+            "required": false,
+            "name": "sortOrder",
+            "in": "query"
           }
         ],
         "responses": {
@@ -6576,6 +6862,9 @@
                     },
                     "pageInfo": {
                       "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
                     }
                   },
                   "required": [

@@ -47,6 +47,15 @@ export const PageInfoSchema = z
   })
   .openapi('PageInfo');
 
+export const PaginationMetaSchema = z
+  .object({
+    total: z.number().int().openapi({ example: 42 }),
+    page: z.number().int().openapi({ example: 1 }),
+    limit: z.number().int().openapi({ example: 20 }),
+    totalPages: z.number().int().openapi({ example: 3 }),
+  })
+  .openapi('PaginationMeta');
+
 // ---------------------------------------------------------------------------
 // User Schemas
 // ---------------------------------------------------------------------------
@@ -1230,6 +1239,11 @@ registry.registerPath({
       cursor: z.string().optional().openapi({ example: 'ZXhhbXBsZQ==' }),
       status: SchoolStatusSchema.optional().openapi({ example: 'active' }),
       search: z.string().optional().openapi({ example: 'Greenwood' }),
+      sortBy: z
+        .enum(['name', 'code', 'status', 'city', 'state', 'createdAt'])
+        .optional()
+        .openapi({ example: 'createdAt' }),
+      sortOrder: z.enum(['asc', 'desc']).optional().openapi({ example: 'desc' }),
     }),
   },
   responses: {
@@ -1240,6 +1254,7 @@ registry.registerPath({
           schema: z.object({
             data: z.array(SchoolSchema),
             pageInfo: PageInfoSchema,
+            meta: PaginationMetaSchema.optional(),
           }),
         },
       },
@@ -1554,6 +1569,11 @@ registry.registerPath({
       cursor: z.string().optional().openapi({ example: 'ZXhhbXBsZQ==' }),
       status: BoardStatusSchema.optional(),
       search: z.string().optional().openapi({ example: 'CBSE' }),
+      sortBy: z
+        .enum(['name', 'code', 'status', 'createdAt'])
+        .optional()
+        .openapi({ example: 'createdAt' }),
+      sortOrder: z.enum(['asc', 'desc']).optional().openapi({ example: 'desc' }),
     }),
   },
   responses: {
@@ -1564,6 +1584,7 @@ registry.registerPath({
           schema: z.object({
             data: z.array(BoardSchema),
             pageInfo: PageInfoSchema,
+            meta: PaginationMetaSchema.optional(),
           }),
         },
       },
@@ -1708,6 +1729,10 @@ registry.registerPath({
       description: 'Board not found',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
+    409: {
+      description: 'Cannot delete board with active grades',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
   },
 });
 
@@ -1788,6 +1813,11 @@ registry.registerPath({
       section: z.string().optional().openapi({ example: 'A' }),
       gradeNumber: z.coerce.number().int().optional().openapi({ example: 10 }),
       search: z.string().optional().openapi({ example: 'Grade 10' }),
+      sortBy: z
+        .enum(['name', 'code', 'gradeNumber', 'status', 'createdAt'])
+        .optional()
+        .openapi({ example: 'createdAt' }),
+      sortOrder: z.enum(['asc', 'desc']).optional().openapi({ example: 'desc' }),
     }),
   },
   responses: {
@@ -1798,6 +1828,7 @@ registry.registerPath({
           schema: z.object({
             data: z.array(GradeSchema),
             pageInfo: PageInfoSchema,
+            meta: PaginationMetaSchema.optional(),
           }),
         },
       },
@@ -1943,7 +1974,8 @@ registry.registerPath({
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
     409: {
-      description: 'Cannot delete grade with active enrolled students',
+      description:
+        'Cannot delete grade with active enrolled students or active teacher assignments',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
   },
@@ -2115,6 +2147,11 @@ registry.registerPath({
       cursor: z.string().optional().openapi({ example: 'ZXhhbXBsZQ==' }),
       status: SubjectStatusSchema.optional(),
       search: z.string().optional().openapi({ example: 'Math' }),
+      sortBy: z
+        .enum(['name', 'code', 'status', 'createdAt'])
+        .optional()
+        .openapi({ example: 'createdAt' }),
+      sortOrder: z.enum(['asc', 'desc']).optional().openapi({ example: 'desc' }),
     }),
   },
   responses: {
@@ -2125,6 +2162,7 @@ registry.registerPath({
           schema: z.object({
             data: z.array(GradeSubjectItemSchema),
             pageInfo: PageInfoSchema,
+            meta: PaginationMetaSchema.optional(),
           }),
         },
       },
@@ -2306,6 +2344,11 @@ registry.registerPath({
       description: 'Subject not found',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
+    409: {
+      description:
+        'Cannot delete subject with active teacher assignments or active grade assignments',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
   },
 });
 
@@ -2384,6 +2427,19 @@ registry.registerPath({
       cursor: z.string().optional().openapi({ example: 'ZXhhbXBsZQ==' }),
       status: TeacherStatusSchema.optional(),
       search: z.string().optional().openapi({ example: 'Edna' }),
+      sortBy: z
+        .enum([
+          'firstName',
+          'lastName',
+          'employeeId',
+          'email',
+          'joiningDate',
+          'createdAt',
+          'status',
+        ])
+        .optional()
+        .openapi({ example: 'createdAt' }),
+      sortOrder: z.enum(['asc', 'desc']).optional().openapi({ example: 'desc' }),
     }),
   },
   responses: {
@@ -2394,6 +2450,7 @@ registry.registerPath({
           schema: z.object({
             data: z.array(TeacherSchema),
             pageInfo: PageInfoSchema,
+            meta: PaginationMetaSchema.optional(),
           }),
         },
       },
@@ -2538,6 +2595,10 @@ registry.registerPath({
       description: 'Teacher not found',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
+    409: {
+      description: 'Cannot delete teacher with active assignments',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
   },
 });
 
@@ -2617,6 +2678,11 @@ registry.registerPath({
       status: StudentStatusSchema.optional(),
       gender: StudentGenderSchema.optional(),
       search: z.string().optional(),
+      sortBy: z
+        .enum(['firstName', 'lastName', 'admissionNumber', 'createdAt', 'status'])
+        .optional()
+        .openapi({ example: 'createdAt' }),
+      sortOrder: z.enum(['asc', 'desc']).optional().openapi({ example: 'desc' }),
     }),
   },
   responses: {
@@ -2627,6 +2693,7 @@ registry.registerPath({
           schema: z.object({
             data: z.array(StudentSchema),
             pageInfo: PageInfoSchema,
+            meta: PaginationMetaSchema.optional(),
           }),
         },
       },
@@ -2891,6 +2958,12 @@ registry.registerPath({
       subjectId: z.uuid().optional(),
       status: TeacherAssignmentStatusSchema.optional(),
       schoolId: z.uuid().optional(),
+      search: z.string().optional().openapi({ example: 'Edna' }),
+      sortBy: z
+        .enum(['createdAt', 'effectiveDate', 'status'])
+        .optional()
+        .openapi({ example: 'createdAt' }),
+      sortOrder: z.enum(['asc', 'desc']).optional().openapi({ example: 'desc' }),
     }),
   },
   responses: {
@@ -2901,6 +2974,7 @@ registry.registerPath({
           schema: z.object({
             data: z.array(TeacherAssignmentSchema),
             pageInfo: PageInfoSchema,
+            meta: PaginationMetaSchema.optional(),
           }),
         },
       },
