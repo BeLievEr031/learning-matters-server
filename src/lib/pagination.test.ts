@@ -3,6 +3,10 @@ import {
   encodeCursor,
   decodeCursor,
   buildPaginatedResponse,
+  buildOffsetPaginatedResponse,
+  calculateOffset,
+  resolveSortOrder,
+  paginationSchema,
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
 } from './pagination.js';
@@ -102,6 +106,96 @@ describe('Pagination Utilities', () => {
       expect(resultMax.pageInfo.hasMore).toBe(false);
       expect(DEFAULT_PAGE_SIZE).toBe(20);
       expect(MAX_PAGE_SIZE).toBe(100);
+    });
+
+    it('includes meta when total and page options are passed', () => {
+      const result = buildPaginatedResponse(
+        items,
+        2,
+        (item) => ({ id: item.id, createdAt: item.createdAt }),
+        { total: 50, page: 2 },
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.meta).toEqual({
+        total: 50,
+        page: 2,
+        limit: 2,
+        totalPages: 25,
+      });
+    });
+  });
+
+  describe('buildOffsetPaginatedResponse', () => {
+    it('constructs correct metadata for offset pagination', () => {
+      const data = [{ id: '1' }, { id: '2' }];
+      const result = buildOffsetPaginatedResponse(data, 45, 2, 10);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(data);
+      expect(result.meta).toEqual({
+        total: 45,
+        page: 2,
+        limit: 10,
+        totalPages: 5,
+      });
+    });
+
+    it('handles total 0 and page 1 correctly', () => {
+      const result = buildOffsetPaginatedResponse([], 0, 1, 20);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual([]);
+      expect(result.meta).toEqual({
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 0,
+      });
+    });
+  });
+
+  describe('calculateOffset & resolveSortOrder', () => {
+    it('computes SQL offset accurately', () => {
+      expect(calculateOffset(1, 20)).toBe(0);
+      expect(calculateOffset(2, 20)).toBe(20);
+      expect(calculateOffset(3, 10)).toBe(20);
+      expect(calculateOffset(0, 10)).toBe(0); // clamps to page 1
+    });
+
+    it('resolves sort order correctly', () => {
+      expect(resolveSortOrder('ASC')).toBe('asc');
+      expect(resolveSortOrder('asc')).toBe('asc');
+      expect(resolveSortOrder('DESC')).toBe('desc');
+      expect(resolveSortOrder('desc')).toBe('desc');
+      expect(resolveSortOrder(undefined)).toBe('desc');
+      expect(resolveSortOrder('invalid')).toBe('desc');
+    });
+  });
+
+  describe('paginationSchema', () => {
+    it('applies standard defaults', () => {
+      const parsed = paginationSchema.parse({});
+      expect(parsed.page).toBe(1);
+      expect(parsed.limit).toBe(DEFAULT_PAGE_SIZE);
+      expect(parsed.sortOrder).toBe('desc');
+      expect(parsed.sortBy).toBeUndefined();
+      expect(parsed.search).toBeUndefined();
+    });
+
+    it('parses valid query parameters', () => {
+      const parsed = paginationSchema.parse({
+        page: '3',
+        limit: '15',
+        sortBy: 'name',
+        sortOrder: 'asc',
+        search: 'springfield',
+      });
+      expect(parsed.page).toBe(3);
+      expect(parsed.limit).toBe(15);
+      expect(parsed.sortBy).toBe('name');
+      expect(parsed.sortOrder).toBe('asc');
+      expect(parsed.search).toBe('springfield');
     });
   });
 });
