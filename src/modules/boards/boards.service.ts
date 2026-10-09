@@ -1,5 +1,6 @@
 import { boardsRepository, type BoardsRepository } from './boards.repository.js';
 import { schoolsRepository, type SchoolsRepository } from '../schools/schools.repository.js';
+import { gradesRepository, type GradesRepository } from '../grades/grades.repository.js';
 import type { Board } from '../../db/schema/boards.js';
 import type { CreateBoardInput, UpdateBoardInput, ListBoardsQuery } from './boards.schemas.js';
 import type { UserRole } from '../../db/schema/users.js';
@@ -19,6 +20,7 @@ export class BoardsService {
   constructor(
     private readonly repo: BoardsRepository = boardsRepository,
     private readonly schoolsRepo: SchoolsRepository = schoolsRepository,
+    private readonly gradesRepo: GradesRepository = gradesRepository,
   ) {}
 
   /**
@@ -124,6 +126,12 @@ export class BoardsService {
     callerRole?: UserRole,
   ): Promise<void> {
     await this.getAndVerifyBoardAccess(id, callerSchoolId, callerRole);
+
+    const hasActiveGrades = await this.gradesRepo.hasActiveGradesByBoard(id);
+    if (hasActiveGrades) {
+      throw new ConflictError('Cannot delete board with active grades');
+    }
+
     await this.repo.softDelete(id);
   }
 

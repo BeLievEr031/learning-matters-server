@@ -3,6 +3,8 @@ import { GradesService } from './grades.service.js';
 import { GradesRepository } from './grades.repository.js';
 import { BoardsRepository } from '../boards/boards.repository.js';
 import { TeachersRepository } from '../teachers/teachers.repository.js';
+import { StudentsRepository } from '../students/students.repository.js';
+import { TeacherAssignmentsRepository } from '../teacher-assignments/teacher-assignments.repository.js';
 import type { Grade } from '../../db/schema/grades.js';
 import type { Board } from '../../db/schema/boards.js';
 import type { Teacher } from '../../db/schema/teachers.js';
@@ -18,6 +20,8 @@ describe('GradesService', () => {
   let mockGradesRepo: GradesRepository;
   let mockBoardsRepo: BoardsRepository;
   let mockTeachersRepo: TeachersRepository;
+  let mockStudentsRepo: StudentsRepository;
+  let mockTeacherAssignmentsRepo: TeacherAssignmentsRepository;
 
   const mockBoard: Board = {
     id: '22222222-2222-4222-a222-222222222222',
@@ -68,7 +72,17 @@ describe('GradesService', () => {
     mockGradesRepo = new GradesRepository();
     mockBoardsRepo = new BoardsRepository();
     mockTeachersRepo = new TeachersRepository();
-    service = new GradesService(mockGradesRepo, mockBoardsRepo, mockTeachersRepo);
+    mockStudentsRepo = new StudentsRepository();
+    mockTeacherAssignmentsRepo = new TeacherAssignmentsRepository();
+    service = new GradesService(
+      mockGradesRepo,
+      mockBoardsRepo,
+      mockTeachersRepo,
+      mockStudentsRepo,
+      mockTeacherAssignmentsRepo,
+    );
+    vi.spyOn(mockStudentsRepo, 'hasActiveStudentsByGrade').mockResolvedValue(false);
+    vi.spyOn(mockTeacherAssignmentsRepo, 'hasActiveAssignmentsByGrade').mockResolvedValue(false);
   });
 
   describe('createGrade', () => {
@@ -244,6 +258,24 @@ describe('GradesService', () => {
 
       await service.deleteGrade(mockGrade.id, mockBoard.schoolId, 'admin');
       expect(deleteSpy).toHaveBeenCalledWith(mockGrade.id);
+    });
+
+    it('throws ConflictError when deleting grade with active enrolled students', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockGrade);
+      vi.spyOn(mockStudentsRepo, 'hasActiveStudentsByGrade').mockResolvedValue(true);
+
+      await expect(service.deleteGrade(mockGrade.id, mockBoard.schoolId, 'admin')).rejects.toThrow(
+        ConflictError,
+      );
+    });
+
+    it('throws ConflictError when deleting grade with active teacher assignments', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockGrade);
+      vi.spyOn(mockTeacherAssignmentsRepo, 'hasActiveAssignmentsByGrade').mockResolvedValue(true);
+
+      await expect(service.deleteGrade(mockGrade.id, mockBoard.schoolId, 'admin')).rejects.toThrow(
+        ConflictError,
+      );
     });
 
     it('throws ForbiddenError when deleting grade from another school', async () => {

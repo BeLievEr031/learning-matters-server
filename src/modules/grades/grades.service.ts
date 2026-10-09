@@ -1,6 +1,11 @@
 import { gradesRepository, type GradesRepository } from './grades.repository.js';
 import { boardsRepository, type BoardsRepository } from '../boards/boards.repository.js';
 import { teachersRepository, type TeachersRepository } from '../teachers/teachers.repository.js';
+import { studentsRepository, type StudentsRepository } from '../students/students.repository.js';
+import {
+  teacherAssignmentsRepository,
+  type TeacherAssignmentsRepository,
+} from '../teacher-assignments/teacher-assignments.repository.js';
 import type { Grade } from '../../db/schema/grades.js';
 import type { Teacher } from '../../db/schema/teachers.js';
 import type { CreateGradeInput, UpdateGradeInput, ListGradesQuery } from './grades.schemas.js';
@@ -22,6 +27,8 @@ export class GradesService {
     private readonly repo: GradesRepository = gradesRepository,
     private readonly boardsRepo: BoardsRepository = boardsRepository,
     private readonly teachersRepo: TeachersRepository = teachersRepository,
+    private readonly studentsRepo: StudentsRepository = studentsRepository,
+    private readonly teacherAssignmentsRepo: TeacherAssignmentsRepository = teacherAssignmentsRepository,
   ) {}
 
   /**
@@ -168,10 +175,15 @@ export class GradesService {
   ): Promise<void> {
     await this.getAndVerifyGradeAccess(gradeId, callerSchoolId, callerRole);
 
-    // Guard hook: blocked if active students exist
-    const hasActiveStudents = await this.checkActiveStudents(gradeId);
+    const hasActiveStudents = await this.studentsRepo.hasActiveStudentsByGrade(gradeId);
     if (hasActiveStudents) {
       throw new ConflictError('Cannot delete grade with active enrolled students');
+    }
+
+    const hasActiveAssignments =
+      await this.teacherAssignmentsRepo.hasActiveAssignmentsByGrade(gradeId);
+    if (hasActiveAssignments) {
+      throw new ConflictError('Cannot delete grade with active teacher assignments');
     }
 
     await this.repo.softDelete(gradeId);
@@ -258,14 +270,6 @@ export class GradesService {
 
     const teacher = await this.teachersRepo.findById(grade.classTeacherId);
     return teacher;
-  }
-
-  /**
-   * Hook to check if active students exist for this grade.
-   */
-  private async checkActiveStudents(_gradeId: string): Promise<boolean> {
-    // When students module is implemented (Phase 6), this queries active students in grade
-    return Promise.resolve(false);
   }
 }
 

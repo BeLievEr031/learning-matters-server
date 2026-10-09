@@ -268,6 +268,25 @@ export class StudentsRepository {
       .orderBy(primaryOrder, desc(students.id))
       .limit(limit + 1);
   }
+
+  /**
+   * Check if any active students exist in a given grade.
+   */
+  async hasActiveStudentsByGrade(gradeId: string): Promise<boolean> {
+    const rows = await db
+      .select({ id: students.id })
+      .from(students)
+      .where(
+        and(
+          eq(students.gradeId, gradeId),
+          isNull(students.deletedAt),
+          eq(students.status, 'active'),
+        ),
+      )
+      .limit(1);
+
+    return rows.length > 0;
+  }
 }
 
 export const studentsRepository = new StudentsRepository();

@@ -3,6 +3,7 @@ import { TeachersService } from './teachers.service.js';
 import { TeachersRepository } from './teachers.repository.js';
 import { SchoolsRepository } from '../schools/schools.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
+import { TeacherAssignmentsRepository } from '../teacher-assignments/teacher-assignments.repository.js';
 import type { Teacher } from '../../db/schema/teachers.js';
 import type { School } from '../../db/schema/schools.js';
 import type { User } from '../../db/schema/users.js';
@@ -13,6 +14,7 @@ describe('TeachersService', () => {
   let mockTeachersRepo: TeachersRepository;
   let mockSchoolsRepo: SchoolsRepository;
   let mockUsersRepo: UsersRepository;
+  let mockTeacherAssignmentsRepo: TeacherAssignmentsRepository;
 
   const school1Id = '11111111-1111-4111-a111-111111111111';
   const school2Id = '22222222-2222-4222-a222-222222222222';
@@ -73,7 +75,14 @@ describe('TeachersService', () => {
     mockTeachersRepo = new TeachersRepository();
     mockSchoolsRepo = new SchoolsRepository();
     mockUsersRepo = new UsersRepository();
-    service = new TeachersService(mockTeachersRepo, mockSchoolsRepo, mockUsersRepo);
+    mockTeacherAssignmentsRepo = new TeacherAssignmentsRepository();
+    service = new TeachersService(
+      mockTeachersRepo,
+      mockSchoolsRepo,
+      mockUsersRepo,
+      mockTeacherAssignmentsRepo,
+    );
+    vi.spyOn(mockTeacherAssignmentsRepo, 'hasActiveAssignmentsByTeacher').mockResolvedValue(false);
   });
 
   describe('createTeacher', () => {
@@ -382,6 +391,15 @@ describe('TeachersService', () => {
       await service.deleteTeacher(mockTeacher.id, school1Id, 'admin');
 
       expect(deleteSpy).toHaveBeenCalledWith(mockTeacher.id);
+    });
+
+    it('throws ConflictError if teacher has active assignments', async () => {
+      vi.spyOn(mockTeachersRepo, 'findById').mockResolvedValue(mockTeacher);
+      vi.spyOn(mockTeacherAssignmentsRepo, 'hasActiveAssignmentsByTeacher').mockResolvedValue(true);
+
+      await expect(service.deleteTeacher(mockTeacher.id, school1Id, 'admin')).rejects.toThrow(
+        ConflictError,
+      );
     });
 
     it('throws NotFoundError if teacher to delete does not exist', async () => {

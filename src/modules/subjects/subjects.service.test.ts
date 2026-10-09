@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SubjectsService } from './subjects.service.js';
 import { SubjectsRepository, type GradeSubjectItem } from './subjects.repository.js';
 import { GradesRepository } from '../grades/grades.repository.js';
+import { TeacherAssignmentsRepository } from '../teacher-assignments/teacher-assignments.repository.js';
 import type { Subject, GradeSubject } from '../../db/schema/subjects.js';
 import type { Grade } from '../../db/schema/grades.js';
 import {
@@ -15,6 +16,7 @@ describe('SubjectsService', () => {
   let service: SubjectsService;
   let mockSubjectsRepo: SubjectsRepository;
   let mockGradesRepo: GradesRepository;
+  let mockTeacherAssignmentsRepo: TeacherAssignmentsRepository;
 
   const school1Id = '11111111-1111-4111-a111-111111111111';
   const school2Id = '22222222-2222-4222-a222-222222222222';
@@ -66,7 +68,10 @@ describe('SubjectsService', () => {
   beforeEach(() => {
     mockSubjectsRepo = new SubjectsRepository();
     mockGradesRepo = new GradesRepository();
-    service = new SubjectsService(mockSubjectsRepo, mockGradesRepo);
+    mockTeacherAssignmentsRepo = new TeacherAssignmentsRepository();
+    service = new SubjectsService(mockSubjectsRepo, mockGradesRepo, mockTeacherAssignmentsRepo);
+    vi.spyOn(mockTeacherAssignmentsRepo, 'hasActiveAssignmentsBySubject').mockResolvedValue(false);
+    vi.spyOn(mockSubjectsRepo, 'hasActiveGradeSubjects').mockResolvedValue(false);
   });
 
   describe('assignOrCreateSubject', () => {
@@ -350,6 +355,24 @@ describe('SubjectsService', () => {
 
       expect(deleteSpy).toHaveBeenCalledWith(mockSubject.id);
       expect(cascadeSpy).toHaveBeenCalledWith(mockSubject.id);
+    });
+
+    it('throws ConflictError if active teacher assignments exist', async () => {
+      vi.spyOn(mockSubjectsRepo, 'findById').mockResolvedValue(mockSubject);
+      vi.spyOn(mockTeacherAssignmentsRepo, 'hasActiveAssignmentsBySubject').mockResolvedValue(true);
+
+      await expect(service.deleteSubject(mockSubject.id, school1Id, 'admin')).rejects.toThrow(
+        ConflictError,
+      );
+    });
+
+    it('throws ConflictError if active grade subjects exist', async () => {
+      vi.spyOn(mockSubjectsRepo, 'findById').mockResolvedValue(mockSubject);
+      vi.spyOn(mockSubjectsRepo, 'hasActiveGradeSubjects').mockResolvedValue(true);
+
+      await expect(service.deleteSubject(mockSubject.id, school1Id, 'admin')).rejects.toThrow(
+        ConflictError,
+      );
     });
 
     it('throws NotFoundError if subject to delete does not exist', async () => {

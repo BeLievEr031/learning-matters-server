@@ -4,6 +4,10 @@ import {
   type GradeSubjectItem,
 } from './subjects.repository.js';
 import { gradesRepository, type GradesRepository } from '../grades/grades.repository.js';
+import {
+  teacherAssignmentsRepository,
+  type TeacherAssignmentsRepository,
+} from '../teacher-assignments/teacher-assignments.repository.js';
 import type { Subject } from '../../db/schema/subjects.js';
 import type {
   AssignOrCreateSubjectInput,
@@ -28,6 +32,7 @@ export class SubjectsService {
   constructor(
     private readonly repo: SubjectsRepository = subjectsRepository,
     private readonly gradesRepo: GradesRepository = gradesRepository,
+    private readonly teacherAssignmentsRepo: TeacherAssignmentsRepository = teacherAssignmentsRepository,
   ) {}
 
   /**
@@ -198,6 +203,17 @@ export class SubjectsService {
     callerRole?: UserRole,
   ): Promise<void> {
     await this.getAndVerifySubjectAccess(subjectId, callerSchoolId, callerRole);
+
+    const hasActiveAssignments =
+      await this.teacherAssignmentsRepo.hasActiveAssignmentsBySubject(subjectId);
+    if (hasActiveAssignments) {
+      throw new ConflictError('Cannot delete subject with active teacher assignments');
+    }
+
+    const hasActiveGradeSubjects = await this.repo.hasActiveGradeSubjects(subjectId);
+    if (hasActiveGradeSubjects) {
+      throw new ConflictError('Cannot delete subject with active grade assignments');
+    }
 
     await this.repo.softDelete(subjectId);
     await this.repo.cascadeRemoveGradeAssignments(subjectId);

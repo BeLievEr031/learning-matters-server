@@ -5,6 +5,7 @@ import { createApp } from '../../app.js';
 import { env } from '../../config/env.js';
 import { teachersRepository } from './teachers.repository.js';
 import { schoolsRepository } from '../schools/schools.repository.js';
+import { teacherAssignmentsRepository } from '../teacher-assignments/teacher-assignments.repository.js';
 import type { Teacher } from '../../db/schema/teachers.js';
 import type { School } from '../../db/schema/schools.js';
 
@@ -86,6 +87,9 @@ describe('Teachers Module API', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.spyOn(teacherAssignmentsRepository, 'hasActiveAssignmentsByTeacher').mockResolvedValue(
+      false,
+    );
   });
 
   describe('POST /api/v1/schools/:schoolId/teachers', () => {
@@ -333,6 +337,20 @@ describe('Teachers Module API', () => {
         .set('Authorization', `Bearer ${ownSchoolPrincipalToken}`);
 
       expect(res.status).toBe(204);
+    });
+
+    it('returns 409 Conflict when deleting teacher with active assignments', async () => {
+      const app = createApp();
+      vi.spyOn(teachersRepository, 'findById').mockResolvedValue(sampleTeacher);
+      vi.spyOn(teacherAssignmentsRepository, 'hasActiveAssignmentsByTeacher').mockResolvedValue(
+        true,
+      );
+
+      const res = await request(app)
+        .delete(`/api/v1/teachers/${sampleTeacher.id}`)
+        .set('Authorization', `Bearer ${ownSchoolAdminToken}`);
+
+      expect(res.status).toBe(409);
     });
 
     it('returns 403 for regular teacher attempting to delete teacher', async () => {

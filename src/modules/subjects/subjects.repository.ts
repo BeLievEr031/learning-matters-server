@@ -276,6 +276,19 @@ export class SubjectsRepository {
 
     return rows;
   }
+
+  /**
+   * Check if any active grade assignments exist for a subject.
+   */
+  async hasActiveGradeSubjects(subjectId: string): Promise<boolean> {
+    const rows = await db
+      .select({ id: gradeSubjects.id })
+      .from(gradeSubjects)
+      .where(and(eq(gradeSubjects.subjectId, subjectId), eq(gradeSubjects.status, 'active')))
+      .limit(1);
+
+    return rows.length > 0;
+  }
 }
 
 export const subjectsRepository = new SubjectsRepository();

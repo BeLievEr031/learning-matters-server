@@ -5,6 +5,7 @@ import { createApp } from '../../app.js';
 import { env } from '../../config/env.js';
 import { boardsRepository } from './boards.repository.js';
 import { schoolsRepository } from '../schools/schools.repository.js';
+import { gradesRepository } from '../grades/grades.repository.js';
 import type { Board } from '../../db/schema/boards.js';
 import type { School } from '../../db/schema/schools.js';
 import type { ErrorResponsePayload } from '../../middleware/error-handler.js';
@@ -85,6 +86,7 @@ describe('Boards Module API', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.spyOn(gradesRepository, 'hasActiveGradesByBoard').mockResolvedValue(false);
   });
 
   describe('POST /api/v1/schools/:schoolId/boards', () => {
@@ -406,6 +408,18 @@ describe('Boards Module API', () => {
         .set('Authorization', `Bearer ${ownSchoolAdminToken}`);
 
       expect(res.status).toBe(204);
+    });
+
+    it('returns 409 Conflict when deleting board with active grades', async () => {
+      const app = createApp();
+      vi.spyOn(boardsRepository, 'findById').mockResolvedValue(sampleBoard);
+      vi.spyOn(gradesRepository, 'hasActiveGradesByBoard').mockResolvedValue(true);
+
+      const res = await request(app)
+        .delete(`/api/v1/boards/${sampleBoard.id}`)
+        .set('Authorization', `Bearer ${ownSchoolAdminToken}`);
+
+      expect(res.status).toBe(409);
     });
 
     it('returns 403 for admin from another school', async () => {

@@ -1,6 +1,10 @@
 import { teachersRepository, type TeachersRepository } from './teachers.repository.js';
 import { schoolsRepository, type SchoolsRepository } from '../schools/schools.repository.js';
 import { usersRepository, type UsersRepository } from '../users/users.repository.js';
+import {
+  teacherAssignmentsRepository,
+  type TeacherAssignmentsRepository,
+} from '../teacher-assignments/teacher-assignments.repository.js';
 import type { Teacher } from '../../db/schema/teachers.js';
 import type {
   CreateTeacherInput,
@@ -21,6 +25,7 @@ export class TeachersService {
     private readonly repo: TeachersRepository = teachersRepository,
     private readonly schoolsRepo: SchoolsRepository = schoolsRepository,
     private readonly usersRepo: UsersRepository = usersRepository,
+    private readonly teacherAssignmentsRepo: TeacherAssignmentsRepository = teacherAssignmentsRepository,
   ) {}
 
   /**
@@ -225,6 +230,12 @@ export class TeachersService {
 
     if (callerRole !== 'super_admin' && teacher.schoolId !== callerSchoolId) {
       throw new ForbiddenError('Forbidden: Cannot delete teacher from another school');
+    }
+
+    const hasActiveAssignments =
+      await this.teacherAssignmentsRepo.hasActiveAssignmentsByTeacher(teacherId);
+    if (hasActiveAssignments) {
+      throw new ConflictError('Cannot delete teacher with active assignments');
     }
 
     await this.repo.softDelete(teacherId);

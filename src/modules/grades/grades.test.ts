@@ -5,6 +5,8 @@ import { createApp } from '../../app.js';
 import { env } from '../../config/env.js';
 import { gradesRepository } from './grades.repository.js';
 import { boardsRepository } from '../boards/boards.repository.js';
+import { studentsRepository } from '../students/students.repository.js';
+import { teacherAssignmentsRepository } from '../teacher-assignments/teacher-assignments.repository.js';
 import type { Grade } from '../../db/schema/grades.js';
 import type { Board } from '../../db/schema/boards.js';
 import type { ErrorResponsePayload } from '../../middleware/error-handler.js';
@@ -73,6 +75,8 @@ describe('Grades Module API', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.spyOn(studentsRepository, 'hasActiveStudentsByGrade').mockResolvedValue(false);
+    vi.spyOn(teacherAssignmentsRepository, 'hasActiveAssignmentsByGrade').mockResolvedValue(false);
   });
 
   describe('POST /api/v1/boards/:boardId/grades', () => {
@@ -393,6 +397,30 @@ describe('Grades Module API', () => {
         .set('Authorization', `Bearer ${ownSchoolAdminToken}`);
 
       expect(res.status).toBe(204);
+    });
+
+    it('returns 409 Conflict when deleting grade with active students', async () => {
+      const app = createApp();
+      vi.spyOn(gradesRepository, 'findById').mockResolvedValue(sampleGrade);
+      vi.spyOn(studentsRepository, 'hasActiveStudentsByGrade').mockResolvedValue(true);
+
+      const res = await request(app)
+        .delete(`/api/v1/grades/${sampleGrade.id}`)
+        .set('Authorization', `Bearer ${ownSchoolAdminToken}`);
+
+      expect(res.status).toBe(409);
+    });
+
+    it('returns 409 Conflict when deleting grade with active teacher assignments', async () => {
+      const app = createApp();
+      vi.spyOn(gradesRepository, 'findById').mockResolvedValue(sampleGrade);
+      vi.spyOn(teacherAssignmentsRepository, 'hasActiveAssignmentsByGrade').mockResolvedValue(true);
+
+      const res = await request(app)
+        .delete(`/api/v1/grades/${sampleGrade.id}`)
+        .set('Authorization', `Bearer ${ownSchoolAdminToken}`);
+
+      expect(res.status).toBe(409);
     });
 
     it('returns 403 for admin from another school', async () => {

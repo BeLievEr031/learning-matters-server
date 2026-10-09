@@ -414,6 +414,63 @@ export class TeacherAssignmentsRepository {
       .where(and(...conditions))
       .orderBy(desc(teacherAssignments.createdAt));
   }
+
+  /**
+   * Check if any active teacher assignments exist for a grade.
+   */
+  async hasActiveAssignmentsByGrade(gradeId: string): Promise<boolean> {
+    const rows = await db
+      .select({ id: teacherAssignments.id })
+      .from(teacherAssignments)
+      .where(
+        and(
+          eq(teacherAssignments.gradeId, gradeId),
+          isNull(teacherAssignments.deletedAt),
+          eq(teacherAssignments.status, 'active'),
+        ),
+      )
+      .limit(1);
+
+    return rows.length > 0;
+  }
+
+  /**
+   * Check if any active teacher assignments exist for a teacher.
+   */
+  async hasActiveAssignmentsByTeacher(teacherId: string): Promise<boolean> {
+    const rows = await db
+      .select({ id: teacherAssignments.id })
+      .from(teacherAssignments)
+      .where(
+        and(
+          eq(teacherAssignments.teacherId, teacherId),
+          isNull(teacherAssignments.deletedAt),
+          eq(teacherAssignments.status, 'active'),
+        ),
+      )
+      .limit(1);
+
+    return rows.length > 0;
+  }
+
+  /**
+   * Check if any active teacher assignments exist for a subject.
+   */
+  async hasActiveAssignmentsBySubject(subjectId: string): Promise<boolean> {
+    const rows = await db
+      .select({ id: teacherAssignments.id })
+      .from(teacherAssignments)
+      .where(
+        and(
+          eq(teacherAssignments.subjectId, subjectId),
+          isNull(teacherAssignments.deletedAt),
+          eq(teacherAssignments.status, 'active'),
+        ),
+      )
+      .limit(1);
+
+    return rows.length > 0;
+  }
 }
 
 export const teacherAssignmentsRepository = new TeacherAssignmentsRepository();

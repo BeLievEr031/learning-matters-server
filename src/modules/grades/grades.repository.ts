@@ -237,6 +237,21 @@ export class GradesRepository {
       .orderBy(primaryOrder, desc(grades.id))
       .limit(limit + 1);
   }
+
+  /**
+   * Check if any active grades exist under a given board.
+   */
+  async hasActiveGradesByBoard(boardId: string): Promise<boolean> {
+    const rows = await db
+      .select({ id: grades.id })
+      .from(grades)
+      .where(
+        and(eq(grades.boardId, boardId), isNull(grades.deletedAt), eq(grades.status, 'active')),
+      )
+      .limit(1);
+
+    return rows.length > 0;
+  }
 }
 
 export const gradesRepository = new GradesRepository();

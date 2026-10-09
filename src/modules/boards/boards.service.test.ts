@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BoardsService } from './boards.service.js';
 import { BoardsRepository } from './boards.repository.js';
 import { SchoolsRepository } from '../schools/schools.repository.js';
+import { GradesRepository } from '../grades/grades.repository.js';
 import type { Board } from '../../db/schema/boards.js';
 import type { School } from '../../db/schema/schools.js';
 import { ConflictError, NotFoundError, ForbiddenError } from '../../lib/app-error.js';
@@ -10,6 +11,7 @@ describe('BoardsService', () => {
   let service: BoardsService;
   let mockBoardsRepo: BoardsRepository;
   let mockSchoolsRepo: SchoolsRepository;
+  let mockGradesRepo: GradesRepository;
 
   const mockSchool: School = {
     id: '11111111-1111-4111-a111-111111111111',
@@ -44,7 +46,9 @@ describe('BoardsService', () => {
   beforeEach(() => {
     mockBoardsRepo = new BoardsRepository();
     mockSchoolsRepo = new SchoolsRepository();
-    service = new BoardsService(mockBoardsRepo, mockSchoolsRepo);
+    mockGradesRepo = new GradesRepository();
+    service = new BoardsService(mockBoardsRepo, mockSchoolsRepo, mockGradesRepo);
+    vi.spyOn(mockGradesRepo, 'hasActiveGradesByBoard').mockResolvedValue(false);
   });
 
   describe('createBoard', () => {
@@ -175,6 +179,15 @@ describe('BoardsService', () => {
 
       await service.deleteBoard(mockBoard.id, mockSchool.id, 'admin');
       expect(deleteSpy).toHaveBeenCalledWith(mockBoard.id);
+    });
+
+    it('throws ConflictError when deleting board with active grades', async () => {
+      vi.spyOn(mockBoardsRepo, 'findById').mockResolvedValue(mockBoard);
+      vi.spyOn(mockGradesRepo, 'hasActiveGradesByBoard').mockResolvedValue(true);
+
+      await expect(service.deleteBoard(mockBoard.id, mockSchool.id, 'admin')).rejects.toThrow(
+        ConflictError,
+      );
     });
 
     it('throws ForbiddenError when deleting board from another school', async () => {
