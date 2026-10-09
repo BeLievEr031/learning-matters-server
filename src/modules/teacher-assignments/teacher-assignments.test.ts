@@ -24,7 +24,7 @@ describe('Teacher Assignments Module API', () => {
   const sampleTeacher: Teacher = {
     id: teacherId,
     schoolId: school1Id,
-    userId: null,
+    userId: 'user-teacher1',
     employeeId: 'EMP-001',
     firstName: 'Edna',
     lastName: 'Krabappel',
@@ -112,6 +112,11 @@ describe('Teacher Assignments Module API', () => {
 
   const ownSchoolTeacherToken = jwt.sign(
     { sub: 'user-teacher1', role: 'teacher', schoolId: school1Id, jti: 'teacher1-jti' },
+    env.JWT_ACCESS_SECRET,
+  );
+
+  const otherTeacherToken = jwt.sign(
+    { sub: 'user-teacher2', role: 'teacher', schoolId: school1Id, jti: 'teacher2-jti' },
     env.JWT_ACCESS_SECRET,
   );
 
@@ -291,6 +296,17 @@ describe('Teacher Assignments Module API', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(1);
+    });
+
+    it('rejects another teacher from viewing different teacher assignments (403)', async () => {
+      const app = createApp();
+      vi.spyOn(teachersRepository, 'findById').mockResolvedValue(sampleTeacher);
+
+      const res = await request(app)
+        .get(`/api/v1/teachers/${teacherId}/assignments`)
+        .set('Authorization', `Bearer ${otherTeacherToken}`);
+
+      expect(res.status).toBe(403);
     });
   });
 

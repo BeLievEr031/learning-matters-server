@@ -138,6 +138,10 @@ export class TeachersService {
       return teacher;
     }
 
+    if (callerRole === 'teacher') {
+      throw new ForbiddenError('Forbidden: Teachers can only view their own profile');
+    }
+
     if (teacher.schoolId !== callerSchoolId) {
       throw new ForbiddenError('Forbidden: Cannot access teacher from another school');
     }

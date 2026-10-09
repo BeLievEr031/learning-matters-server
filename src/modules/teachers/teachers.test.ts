@@ -72,6 +72,7 @@ describe('Teachers Module API', () => {
     { sub: teacherUserId, role: 'teacher', schoolId: school1Id, jti: 'teach1-jti' },
     env.JWT_ACCESS_SECRET,
   );
+  const ownSchoolTeacherToken = ownTeacherSelfToken;
 
   const otherSchoolTeacherToken = jwt.sign(
     { sub: 'user-teach2', role: 'teacher', schoolId: school2Id, jti: 'teach2-jti' },
@@ -148,12 +149,32 @@ describe('Teachers Module API', () => {
       expect(res.status).toBe(403);
     });
 
-    it('returns 403 when teacher or principal attempts to create teacher', async () => {
+    it('creates a teacher (201) for principal in own school', async () => {
       const app = createApp();
+      vi.spyOn(schoolsRepository, 'findById').mockResolvedValue(sampleSchool);
+      vi.spyOn(teachersRepository, 'findBySchoolAndEmployeeId').mockResolvedValue(null);
+      vi.spyOn(teachersRepository, 'findBySchoolAndEmail').mockResolvedValue(null);
+      vi.spyOn(teachersRepository, 'create').mockResolvedValue(sampleTeacher);
 
       const res = await request(app)
         .post(`/api/v1/schools/${school1Id}/teachers`)
         .set('Authorization', `Bearer ${ownSchoolPrincipalToken}`)
+        .send({
+          employeeId: 'EMP-001',
+          firstName: 'Edna',
+          lastName: 'Krabappel',
+          email: 'edna@springfield.edu',
+        });
+
+      expect(res.status).toBe(201);
+    });
+
+    it('returns 403 when regular teacher attempts to create teacher', async () => {
+      const app = createApp();
+
+      const res = await request(app)
+        .post(`/api/v1/schools/${school1Id}/teachers`)
+        .set('Authorization', `Bearer ${ownSchoolTeacherToken}`)
         .send({
           employeeId: 'EMP-001',
           firstName: 'Edna',
@@ -261,12 +282,28 @@ describe('Teachers Module API', () => {
       expect(body.data.firstName).toBe('Elizabeth');
     });
 
-    it('returns 403 when principal attempts to update teacher', async () => {
+    it('updates teacher for principal in own school (200)', async () => {
       const app = createApp();
+      vi.spyOn(teachersRepository, 'findById').mockResolvedValue(sampleTeacher);
+      vi.spyOn(teachersRepository, 'update').mockResolvedValue({
+        ...sampleTeacher,
+        firstName: 'Elizabeth',
+      });
 
       const res = await request(app)
         .patch(`/api/v1/teachers/${sampleTeacher.id}`)
         .set('Authorization', `Bearer ${ownSchoolPrincipalToken}`)
+        .send({ firstName: 'Elizabeth' });
+
+      expect(res.status).toBe(200);
+    });
+
+    it('returns 403 when teacher attempts to update teacher', async () => {
+      const app = createApp();
+
+      const res = await request(app)
+        .patch(`/api/v1/teachers/${sampleTeacher.id}`)
+        .set('Authorization', `Bearer ${ownSchoolTeacherToken}`)
         .send({ firstName: 'Elizabeth' });
 
       expect(res.status).toBe(403);
@@ -286,12 +323,24 @@ describe('Teachers Module API', () => {
       expect(res.status).toBe(204);
     });
 
-    it('returns 403 for principal attempting to delete teacher', async () => {
+    it('soft-deletes teacher for principal in own school (204)', async () => {
       const app = createApp();
+      vi.spyOn(teachersRepository, 'findById').mockResolvedValue(sampleTeacher);
+      vi.spyOn(teachersRepository, 'softDelete').mockResolvedValue(true);
 
       const res = await request(app)
         .delete(`/api/v1/teachers/${sampleTeacher.id}`)
         .set('Authorization', `Bearer ${ownSchoolPrincipalToken}`);
+
+      expect(res.status).toBe(204);
+    });
+
+    it('returns 403 for regular teacher attempting to delete teacher', async () => {
+      const app = createApp();
+
+      const res = await request(app)
+        .delete(`/api/v1/teachers/${sampleTeacher.id}`)
+        .set('Authorization', `Bearer ${ownSchoolTeacherToken}`);
 
       expect(res.status).toBe(403);
     });

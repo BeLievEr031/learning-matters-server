@@ -17,11 +17,11 @@ import {
  */
 export const gradeStudentsRouter: Router = Router({ mergeParams: true });
 
-// Create student under grade (super_admin or own-school admin)
+// Create student under grade (super_admin, own-school admin, or principal)
 gradeStudentsRouter.post(
   '/',
   authenticate,
-  authorize('super_admin', 'admin'),
+  authorize('super_admin', 'admin', 'principal'),
   validate({ params: gradeIdParamSchema, body: createStudentSchema }),
   studentsController.createStudent,
 );
@@ -49,29 +49,29 @@ studentsRouter.get(
   studentsController.getStudentById,
 );
 
-// Update student profile (super_admin or own-school admin)
+// Update student profile (super_admin, own-school admin, or principal)
 studentsRouter.patch(
   '/:studentId',
   authenticate,
-  authorize('super_admin', 'admin'),
+  authorize('super_admin', 'admin', 'principal'),
   validate({ params: studentIdParamSchema, body: updateStudentSchema }),
   studentsController.updateStudent,
 );
 
-// Transfer student to another grade (super_admin or own-school admin)
+// Transfer student to another grade (super_admin, own-school admin, or principal)
 studentsRouter.patch(
   '/:studentId/transfer',
   authenticate,
-  authorize('super_admin', 'admin'),
+  authorize('super_admin', 'admin', 'principal'),
   validate({ params: studentIdParamSchema, body: transferStudentSchema }),
   studentsController.transferStudent,
 );
 
-// Soft-delete student (super_admin or own-school admin)
+// Soft-delete student (super_admin, own-school admin, or principal)
 studentsRouter.delete(
   '/:studentId',
   authenticate,
-  authorize('super_admin', 'admin'),
+  authorize('super_admin', 'admin', 'principal'),
   validate({ params: studentIdParamSchema }),
   studentsController.deleteStudent,
 );

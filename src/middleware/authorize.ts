@@ -67,3 +67,73 @@ export function isOwnerOrAdmin(
   if (!user) return false;
   return user.role === 'admin' || user.role === 'super_admin' || user.id === resourceOwnerId;
 }
+
+/**
+ * Check if user can manage school-level resources (super_admin or own-school admin).
+ */
+export function canManageSchool(
+  user?: { id: string; role: UserRole; schoolId: string | null },
+  schoolId?: string,
+): boolean {
+  if (!user) return false;
+  if (user.role === 'super_admin') return true;
+  if (user.role === 'admin' && user.schoolId && schoolId && user.schoolId === schoolId) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Check if user can manage teachers or students in a school (super_admin, own-school admin, or principal).
+ */
+export function canManageTeachersOrStudents(
+  user?: { id: string; role: UserRole; schoolId: string | null },
+  schoolId?: string,
+): boolean {
+  if (!user) return false;
+  if (user.role === 'super_admin') return true;
+  if (
+    (user.role === 'admin' || user.role === 'principal') &&
+    user.schoolId &&
+    schoolId &&
+    user.schoolId === schoolId
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Check if user can manage or read a grade (super_admin, own-school admin/principal, or assigned class_teacher).
+ */
+export function canManageGrade(
+  user?: { id: string; role: UserRole; schoolId: string | null },
+  grade?: { schoolId: string; classTeacherId?: string | null },
+  teacherProfileId?: string | null,
+): boolean {
+  if (!user || !grade) return false;
+  if (user.role === 'super_admin') return true;
+  if ((user.role === 'admin' || user.role === 'principal') && user.schoolId === grade.schoolId) {
+    return true;
+  }
+  if (
+    user.role === 'class_teacher' &&
+    teacherProfileId &&
+    grade.classTeacherId === teacherProfileId
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Check if user can view their own profile or is authorized school staff.
+ */
+export function canViewOwnProfile(
+  user?: { id: string; role: UserRole },
+  targetUserId?: string | null,
+): boolean {
+  if (!user || !targetUserId) return false;
+  if (user.role === 'super_admin') return true;
+  return user.id === targetUserId;
+}

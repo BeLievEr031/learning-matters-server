@@ -6,9 +6,11 @@ import { env } from '../../config/env.js';
 import { studentsRepository } from './students.repository.js';
 import { gradesRepository } from '../grades/grades.repository.js';
 import { usersRepository } from '../users/users.repository.js';
+import { teachersRepository } from '../teachers/teachers.repository.js';
 import type { Student } from '../../db/schema/students.js';
 import type { Grade } from '../../db/schema/grades.js';
 import type { User } from '../../db/schema/users.js';
+import type { Teacher } from '../../db/schema/teachers.js';
 import type { ErrorResponsePayload } from '../../middleware/error-handler.js';
 
 describe('Students Module API', () => {
@@ -69,6 +71,23 @@ describe('Students Module API', () => {
     guardianPhone: '+15551234567',
     guardianEmail: 'homer@simpson.edu',
     address: '742 Evergreen Terrace',
+    status: 'active',
+    createdAt: new Date('2026-01-01T12:00:00Z'),
+    updatedAt: new Date('2026-01-01T12:00:00Z'),
+    deletedAt: null,
+  };
+
+  const sampleTeacher: Teacher = {
+    id: 'teacher-ct-1',
+    schoolId: school1Id,
+    userId: 'user-ct1',
+    employeeId: 'EMP-CT1',
+    firstName: 'Elizabeth',
+    lastName: 'Hoover',
+    email: 'hoover@springfield.edu',
+    phone: null,
+    joiningDate: new Date('2025-08-01T00:00:00Z'),
+    qualification: 'B.Ed',
     status: 'active',
     createdAt: new Date('2026-01-01T12:00:00Z'),
     updatedAt: new Date('2026-01-01T12:00:00Z'),
@@ -242,7 +261,9 @@ describe('Students Module API', () => {
   describe('GET /api/v1/grades/:gradeId/students', () => {
     it('returns paginated students for grade (200) to class_teacher', async () => {
       const app = createApp();
-      vi.spyOn(gradesRepository, 'findById').mockResolvedValue(sampleGrade);
+      const gradeWithClassTeacher = { ...sampleGrade, classTeacherId: 'teacher-ct-1' };
+      vi.spyOn(gradesRepository, 'findById').mockResolvedValue(gradeWithClassTeacher);
+      vi.spyOn(teachersRepository, 'findByUserId').mockResolvedValue(sampleTeacher);
       vi.spyOn(studentsRepository, 'listByGrade').mockResolvedValue([sampleStudent]);
 
       const res = await request(app)
@@ -252,6 +273,19 @@ describe('Students Module API', () => {
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(1);
       expect(res.body.pageInfo).toBeDefined();
+    });
+
+    it('rejects class_teacher from viewing students of unassigned grade (403)', async () => {
+      const app = createApp();
+      const gradeWithOtherTeacher = { ...sampleGrade, classTeacherId: 'teacher-other' };
+      vi.spyOn(gradesRepository, 'findById').mockResolvedValue(gradeWithOtherTeacher);
+      vi.spyOn(teachersRepository, 'findByUserId').mockResolvedValue(sampleTeacher);
+
+      const res = await request(app)
+        .get(`/api/v1/grades/${grade1Id}/students`)
+        .set('Authorization', `Bearer ${ownSchoolClassTeacherToken}`);
+
+      expect(res.status).toBe(403);
     });
 
     it('allows principal to list students (200)', async () => {

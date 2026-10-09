@@ -63,6 +63,7 @@ export class TeacherAssignmentsController {
         teacherId,
         req.user?.schoolId,
         req.user?.role,
+        req.user?.id,
       );
       res.status(200).json({ data: assignments });
     } catch (err) {
@@ -77,6 +78,7 @@ export class TeacherAssignmentsController {
         gradeId,
         req.user?.schoolId,
         req.user?.role,
+        req.user?.id,
       );
       res.status(200).json({ data: teachers });
     } catch (err) {

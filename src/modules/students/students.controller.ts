@@ -32,6 +32,7 @@ export class StudentsController {
         req.query,
         req.user?.schoolId,
         req.user?.role,
+        req.user?.id,
       );
       res.status(200).json(result);
     } catch (err) {

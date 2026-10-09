@@ -169,10 +169,17 @@ export class TeacherAssignmentsService {
     teacherId: string,
     callerSchoolId?: string | null,
     callerRole?: UserRole,
+    callerUserId?: string,
   ): Promise<TeacherAssignmentDetail[]> {
     const teacher = await this.teachersRepo.findById(teacherId);
     if (!teacher) {
       throw new NotFoundError('Teacher not found');
+    }
+
+    if (callerRole === 'teacher') {
+      if (!callerUserId || teacher.userId !== callerUserId) {
+        throw new ForbiddenError('Forbidden: Teachers can only view their own assignments');
+      }
     }
 
     if (callerRole !== 'super_admin' && teacher.schoolId !== callerSchoolId) {
@@ -189,10 +196,23 @@ export class TeacherAssignmentsService {
     gradeId: string,
     callerSchoolId?: string | null,
     callerRole?: UserRole,
+    callerUserId?: string,
   ): Promise<TeacherAssignmentDetail[]> {
     const grade = await this.gradesRepo.findById(gradeId);
     if (!grade) {
       throw new NotFoundError('Grade not found');
+    }
+
+    if (callerRole === 'class_teacher') {
+      if (!callerUserId) {
+        throw new ForbiddenError('Forbidden: Insufficient permissions');
+      }
+      const teacherProfile = await this.teachersRepo.findByUserId(callerUserId);
+      if (grade.classTeacherId !== teacherProfile?.id) {
+        throw new ForbiddenError(
+          'Forbidden: Class teachers can only view assignments for their assigned grade',
+        );
+      }
     }
 
     if (callerRole !== 'super_admin' && grade.schoolId !== callerSchoolId) {

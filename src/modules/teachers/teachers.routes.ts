@@ -16,11 +16,11 @@ import {
  */
 export const schoolTeachersRouter: Router = Router({ mergeParams: true });
 
-// Create teacher under school (super_admin or own-school admin)
+// Create teacher under school (super_admin, own-school admin, or principal)
 schoolTeachersRouter.post(
   '/',
   authenticate,
-  authorize('super_admin', 'admin'),
+  authorize('super_admin', 'admin', 'principal'),
   validate({ params: schoolIdParamSchema, body: createTeacherSchema }),
   teachersController.createTeacher,
 );
@@ -53,20 +53,20 @@ teachersRouter.get(
   teachersController.getTeacherById,
 );
 
-// Update teacher (super_admin or own-school admin)
+// Update teacher (super_admin, own-school admin, or principal)
 teachersRouter.patch(
   '/:teacherId',
   authenticate,
-  authorize('super_admin', 'admin'),
+  authorize('super_admin', 'admin', 'principal'),
   validate({ params: teacherIdParamSchema, body: updateTeacherSchema }),
   teachersController.updateTeacher,
 );
 
-// Soft-delete teacher (super_admin or own-school admin)
+// Soft-delete teacher (super_admin, own-school admin, or principal)
 teachersRouter.delete(
   '/:teacherId',
   authenticate,
-  authorize('super_admin', 'admin'),
+  authorize('super_admin', 'admin', 'principal'),
   validate({ params: teacherIdParamSchema }),
   teachersController.deleteTeacher,
 );

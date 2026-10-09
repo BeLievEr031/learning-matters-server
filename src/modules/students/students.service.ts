@@ -1,6 +1,7 @@
 import { studentsRepository, type StudentsRepository } from './students.repository.js';
 import { gradesRepository, type GradesRepository } from '../grades/grades.repository.js';
 import { usersRepository, type UsersRepository } from '../users/users.repository.js';
+import { teachersRepository, type TeachersRepository } from '../teachers/teachers.repository.js';
 import type { Student } from '../../db/schema/students.js';
 import type {
   CreateStudentInput,
@@ -27,6 +28,7 @@ export class StudentsService {
     private readonly repo: StudentsRepository = studentsRepository,
     private readonly gradesRepo: GradesRepository = gradesRepository,
     private readonly usersRepo: UsersRepository = usersRepository,
+    private readonly teachersRepo: TeachersRepository = teachersRepository,
   ) {}
 
   /**
@@ -109,8 +111,21 @@ export class StudentsService {
     query: Partial<ListStudentsQuery> = {},
     callerSchoolId?: string | null,
     callerRole?: UserRole,
+    callerUserId?: string,
   ): Promise<PaginatedResult<Student>> {
-    await this.getAndVerifyGradeAccess(gradeId, callerSchoolId, callerRole);
+    const grade = await this.getAndVerifyGradeAccess(gradeId, callerSchoolId, callerRole);
+
+    if (callerRole === 'class_teacher') {
+      if (!callerUserId) {
+        throw new ForbiddenError('Forbidden: Insufficient permissions');
+      }
+      const teacherProfile = await this.teachersRepo.findByUserId(callerUserId);
+      if (grade.classTeacherId !== teacherProfile?.id) {
+        throw new ForbiddenError(
+          'Forbidden: Class teachers can only view students in their assigned grade',
+        );
+      }
+    }
 
     const limit = query.limit ?? DEFAULT_PAGE_SIZE;
     const cursor = query.cursor ? (decodeCursor(query.cursor) ?? undefined) : undefined;
@@ -147,6 +162,10 @@ export class StudentsService {
 
     if (callerUserId && student.userId === callerUserId) {
       return student;
+    }
+
+    if (callerRole === 'student') {
+      throw new ForbiddenError('Forbidden: Students can only view their own profile');
     }
 
     if (student.schoolId !== callerSchoolId) {
