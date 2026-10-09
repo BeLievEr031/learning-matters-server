@@ -156,6 +156,40 @@ export const UpdateSchoolRequestSchema = z
   .openapi('UpdateSchoolRequest');
 
 // ---------------------------------------------------------------------------
+// Principal Schemas
+// ---------------------------------------------------------------------------
+export const PrincipalStatusSchema = z.enum(['active', 'inactive']).openapi('PrincipalStatus');
+
+export const PrincipalSchema = z
+  .object({
+    id: z.uuid().openapi({ example: '77777777-7777-4777-a777-777777777777' }),
+    schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    userId: z.uuid().openapi({ example: '88888888-8888-4888-a888-888888888888' }),
+    employeeId: z.string().openapi({ example: 'PRIN-001' }),
+    firstName: z.string().openapi({ example: 'Seymour' }),
+    lastName: z.string().openapi({ example: 'Skinner' }),
+    email: z.email().openapi({ example: 'skinner@springfield.edu' }),
+    phone: z.string().nullable().openapi({ example: '+919876543210' }),
+    status: PrincipalStatusSchema.openapi({ example: 'active' }),
+    createdAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    updatedAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    deletedAt: z.iso.datetime().nullable().openapi({ example: null }),
+  })
+  .openapi('Principal');
+
+export const UpsertPrincipalRequestSchema = z
+  .object({
+    userId: z.uuid().openapi({ example: '88888888-8888-4888-a888-888888888888' }),
+    employeeId: z.string().min(1).max(50).openapi({ example: 'PRIN-001' }),
+    firstName: z.string().min(1).max(100).openapi({ example: 'Seymour' }),
+    lastName: z.string().min(1).max(100).openapi({ example: 'Skinner' }),
+    email: z.email().openapi({ example: 'skinner@springfield.edu' }),
+    phone: z.string().max(20).nullable().optional().openapi({ example: '+919876543210' }),
+    status: PrincipalStatusSchema.default('active').openapi({ example: 'active' }),
+  })
+  .openapi('UpsertPrincipalRequest');
+
+// ---------------------------------------------------------------------------
 // Board Schemas
 // ---------------------------------------------------------------------------
 export const BoardStatusSchema = z.enum(['active', 'inactive', 'archived']).openapi('BoardStatus');
@@ -221,6 +255,10 @@ export const GradeSchema = z
     gradeNumber: z.number().int().openapi({ example: 10 }),
     section: z.string().nullable().openapi({ example: 'A' }),
     capacity: z.number().int().nullable().openapi({ example: 40 }),
+    classTeacherId: z
+      .uuid()
+      .nullable()
+      .openapi({ example: '55555555-5555-4555-a555-555555555555' }),
     status: GradeStatusSchema.openapi({ example: 'active' }),
     createdAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
     updatedAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
@@ -254,6 +292,12 @@ export const UpdateGradeRequestSchema = z
     status: GradeStatusSchema.optional().openapi({ example: 'active' }),
   })
   .openapi('UpdateGradeRequest');
+
+export const AssignClassTeacherRequestSchema = z
+  .object({
+    teacherId: z.uuid().nullable().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+  })
+  .openapi('AssignClassTeacherRequest');
 
 // ---------------------------------------------------------------------------
 // Subject Schemas
@@ -1339,6 +1383,103 @@ registry.registerPath({
 });
 
 // ---------------------------------------------------------------------------
+// Principal Endpoints
+// ---------------------------------------------------------------------------
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/schools/{schoolId}/principal',
+  tags: ['Principals'],
+  summary: 'Get principal profile for a school',
+  description:
+    'Retrieve the principal profile for a specific school. Accessible by Super Admin, own-school Admin, or own-school Principal.',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Principal profile retrieved successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: PrincipalSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid school ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin, own-school Admin, or own-school Principal only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'School or principal profile not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'put',
+  path: '/api/v1/schools/{schoolId}/principal',
+  tags: ['Principals'],
+  summary: 'Upsert principal profile for a school (Admin only)',
+  description:
+    'Create or update the principal profile for a school. Accessible by Super Admin or own-school Admin.',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: UpsertPrincipalRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Principal profile upserted successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: PrincipalSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error or invalid user ID / role',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'School not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'User is already assigned as principal for another school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+// ---------------------------------------------------------------------------
 // Board Endpoints
 // ---------------------------------------------------------------------------
 registry.registerPath({
@@ -1803,6 +1944,96 @@ registry.registerPath({
     },
     409: {
       description: 'Cannot delete grade with active enrolled students',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/grades/{gradeId}/class-teacher',
+  tags: ['Grades'],
+  summary: 'Get assigned class teacher for a grade',
+  description:
+    'Retrieve the class teacher assigned to this grade. Returns null in data if unassigned.',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      gradeId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Assigned class teacher retrieved successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: TeacherSchema.nullable() }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid grade ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Insufficient permissions or outside school scope',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Grade not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'put',
+  path: '/api/v1/grades/{gradeId}/class-teacher',
+  tags: ['Grades'],
+  summary: 'Assign or unassign class teacher for a grade',
+  description:
+    'Assign a teacher as class teacher for a grade, or set teacherId to null to unassign. Accessible by Super Admin, own-school Admin, or own-school Principal.',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      gradeId: z.uuid().openapi({ example: '33333333-3333-4333-a333-333333333333' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: AssignClassTeacherRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Class teacher assigned or unassigned successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: GradeSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid input or teacher does not belong to this school',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin, own-school Admin, or own-school Principal only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Grade or teacher not found',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
   },

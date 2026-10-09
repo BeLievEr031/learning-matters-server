@@ -45,6 +45,8 @@ describe('OpenAPI Documentation & Swagger UI', () => {
     expect(paths['/api/v1/schools/{schoolId}']?.get).toBeDefined();
     expect(paths['/api/v1/schools/{schoolId}']?.patch).toBeDefined();
     expect(paths['/api/v1/schools/{schoolId}']?.delete).toBeDefined();
+    expect(paths['/api/v1/schools/{schoolId}/principal']?.get).toBeDefined();
+    expect(paths['/api/v1/schools/{schoolId}/principal']?.put).toBeDefined();
 
     // Boards
     expect(paths['/api/v1/schools/{schoolId}/boards']?.post).toBeDefined();
@@ -59,6 +61,8 @@ describe('OpenAPI Documentation & Swagger UI', () => {
     expect(paths['/api/v1/grades/{gradeId}']?.get).toBeDefined();
     expect(paths['/api/v1/grades/{gradeId}']?.patch).toBeDefined();
     expect(paths['/api/v1/grades/{gradeId}']?.delete).toBeDefined();
+    expect(paths['/api/v1/grades/{gradeId}/class-teacher']?.get).toBeDefined();
+    expect(paths['/api/v1/grades/{gradeId}/class-teacher']?.put).toBeDefined();
 
     // Subjects
     expect(paths['/api/v1/grades/{gradeId}/subjects']?.post).toBeDefined();
@@ -105,6 +109,12 @@ describe('OpenAPI Documentation & Swagger UI', () => {
     expect(paths['/api/v1/users']?.get?.security).toEqual([{ bearerAuth: [] }]);
     expect(paths['/api/v1/users/{id}']?.get?.security).toEqual([{ bearerAuth: [] }]);
     expect(paths['/api/v1/users/{id}']?.delete?.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/schools/{schoolId}/principal']?.get?.security).toEqual([
+      { bearerAuth: [] },
+    ]);
+    expect(paths['/api/v1/schools/{schoolId}/principal']?.put?.security).toEqual([
+      { bearerAuth: [] },
+    ]);
     expect(paths['/api/v1/schools/{schoolId}/boards']?.post?.security).toEqual([
       { bearerAuth: [] },
     ]);
@@ -117,6 +127,12 @@ describe('OpenAPI Documentation & Swagger UI', () => {
     expect(paths['/api/v1/grades/{gradeId}']?.get?.security).toEqual([{ bearerAuth: [] }]);
     expect(paths['/api/v1/grades/{gradeId}']?.patch?.security).toEqual([{ bearerAuth: [] }]);
     expect(paths['/api/v1/grades/{gradeId}']?.delete?.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/grades/{gradeId}/class-teacher']?.get?.security).toEqual([
+      { bearerAuth: [] },
+    ]);
+    expect(paths['/api/v1/grades/{gradeId}/class-teacher']?.put?.security).toEqual([
+      { bearerAuth: [] },
+    ]);
     expect(paths['/api/v1/grades/{gradeId}/subjects']?.post?.security).toEqual([
       { bearerAuth: [] },
     ]);

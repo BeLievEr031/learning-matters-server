@@ -617,6 +617,138 @@
           "state"
         ]
       },
+      "Principal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "77777777-7777-4777-a777-777777777777"
+          },
+          "schoolId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "11111111-1111-4111-a111-111111111111"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "88888888-8888-4888-a888-888888888888"
+          },
+          "employeeId": {
+            "type": "string",
+            "example": "PRIN-001"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "Seymour"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Skinner"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "skinner@springfield.edu"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "+919876543210"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PrincipalStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T12:00:00.000Z"
+          },
+          "deletedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": null
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "userId",
+          "employeeId",
+          "firstName",
+          "lastName",
+          "email",
+          "phone",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "deletedAt"
+        ]
+      },
+      "PrincipalStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "inactive"
+        ],
+        "example": "active"
+      },
+      "UpsertPrincipalRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "88888888-8888-4888-a888-888888888888"
+          },
+          "employeeId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "example": "PRIN-001"
+          },
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Seymour"
+          },
+          "lastName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Skinner"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "skinner@springfield.edu"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20,
+            "example": "+919876543210"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PrincipalStatus"
+          }
+        },
+        "required": [
+          "userId",
+          "employeeId",
+          "firstName",
+          "lastName",
+          "email"
+        ]
+      },
       "Board": {
         "type": "object",
         "properties": {
@@ -779,6 +911,12 @@
             "nullable": true,
             "example": 40
           },
+          "classTeacherId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "example": "55555555-5555-4555-a555-555555555555"
+          },
           "status": {
             "$ref": "#/components/schemas/GradeStatus"
           },
@@ -808,6 +946,7 @@
           "gradeNumber",
           "section",
           "capacity",
+          "classTeacherId",
           "status",
           "createdAt",
           "updatedAt",
@@ -899,6 +1038,120 @@
             "$ref": "#/components/schemas/GradeStatus"
           }
         }
+      },
+      "Teacher": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "55555555-5555-4555-a555-555555555555"
+          },
+          "schoolId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "11111111-1111-4111-a111-111111111111"
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "example": "99999999-9999-4999-a999-999999999999"
+          },
+          "employeeId": {
+            "type": "string",
+            "example": "EMP-001"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "Edna"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Krabappel"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "edna@springfield.edu"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "+15559876543"
+          },
+          "joiningDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": "2025-08-01T00:00:00.000Z"
+          },
+          "qualification": {
+            "type": "string",
+            "nullable": true,
+            "example": "M.Ed."
+          },
+          "status": {
+            "$ref": "#/components/schemas/TeacherStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T12:00:00.000Z"
+          },
+          "deletedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": null
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "userId",
+          "employeeId",
+          "firstName",
+          "lastName",
+          "email",
+          "phone",
+          "joiningDate",
+          "qualification",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "deletedAt"
+        ]
+      },
+      "TeacherStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "inactive",
+          "on_leave",
+          "terminated"
+        ],
+        "example": "active"
+      },
+      "AssignClassTeacherRequest": {
+        "type": "object",
+        "properties": {
+          "teacherId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "example": "55555555-5555-4555-a555-555555555555"
+          }
+        },
+        "required": [
+          "teacherId"
+        ]
       },
       "GradeSubjectItem": {
         "type": "object",
@@ -1107,105 +1360,6 @@
             "$ref": "#/components/schemas/SubjectStatus"
           }
         }
-      },
-      "Teacher": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "example": "55555555-5555-4555-a555-555555555555"
-          },
-          "schoolId": {
-            "type": "string",
-            "format": "uuid",
-            "example": "11111111-1111-4111-a111-111111111111"
-          },
-          "userId": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid",
-            "example": "99999999-9999-4999-a999-999999999999"
-          },
-          "employeeId": {
-            "type": "string",
-            "example": "EMP-001"
-          },
-          "firstName": {
-            "type": "string",
-            "example": "Edna"
-          },
-          "lastName": {
-            "type": "string",
-            "example": "Krabappel"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "example": "edna@springfield.edu"
-          },
-          "phone": {
-            "type": "string",
-            "nullable": true,
-            "example": "+15559876543"
-          },
-          "joiningDate": {
-            "type": "string",
-            "nullable": true,
-            "format": "date-time",
-            "example": "2025-08-01T00:00:00.000Z"
-          },
-          "qualification": {
-            "type": "string",
-            "nullable": true,
-            "example": "M.Ed."
-          },
-          "status": {
-            "$ref": "#/components/schemas/TeacherStatus"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-01-01T12:00:00.000Z"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-01-01T12:00:00.000Z"
-          },
-          "deletedAt": {
-            "type": "string",
-            "nullable": true,
-            "format": "date-time",
-            "example": null
-          }
-        },
-        "required": [
-          "id",
-          "schoolId",
-          "userId",
-          "employeeId",
-          "firstName",
-          "lastName",
-          "email",
-          "phone",
-          "joiningDate",
-          "qualification",
-          "status",
-          "createdAt",
-          "updatedAt",
-          "deletedAt"
-        ]
-      },
-      "TeacherStatus": {
-        "type": "string",
-        "enum": [
-          "active",
-          "inactive",
-          "on_leave",
-          "terminated"
-        ],
-        "example": "active"
       },
       "CreateTeacherRequest": {
         "type": "object",
@@ -3223,6 +3377,196 @@
         }
       }
     },
+    "/api/v1/schools/{schoolId}/principal": {
+      "get": {
+        "tags": [
+          "Principals"
+        ],
+        "summary": "Get principal profile for a school",
+        "description": "Retrieve the principal profile for a specific school. Accessible by Super Admin, own-school Admin, or own-school Principal.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-a111-111111111111"
+            },
+            "required": true,
+            "name": "schoolId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Principal profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Principal"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid school ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin, own-school Admin, or own-school Principal only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "School or principal profile not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Principals"
+        ],
+        "summary": "Upsert principal profile for a school (Admin only)",
+        "description": "Create or update the principal profile for a school. Accessible by Super Admin or own-school Admin.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-a111-111111111111"
+            },
+            "required": true,
+            "name": "schoolId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertPrincipalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Principal profile upserted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Principal"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or invalid user ID / role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin or own-school Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "School not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "User is already assigned as principal for another school",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/schools/{schoolId}/boards": {
       "post": {
         "tags": [
@@ -4217,6 +4561,186 @@
           },
           "409": {
             "description": "Cannot delete grade with active enrolled students",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/grades/{gradeId}/class-teacher": {
+      "get": {
+        "tags": [
+          "Grades"
+        ],
+        "summary": "Get assigned class teacher for a grade",
+        "description": "Retrieve the class teacher assigned to this grade. Returns null in data if unassigned.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "33333333-3333-4333-a333-333333333333"
+            },
+            "required": true,
+            "name": "gradeId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assigned class teacher retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Teacher"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid grade ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Insufficient permissions or outside school scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Grade not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Grades"
+        ],
+        "summary": "Assign or unassign class teacher for a grade",
+        "description": "Assign a teacher as class teacher for a grade, or set teacherId to null to unassign. Accessible by Super Admin, own-school Admin, or own-school Principal.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "33333333-3333-4333-a333-333333333333"
+            },
+            "required": true,
+            "name": "gradeId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignClassTeacherRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Class teacher assigned or unassigned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Grade"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or teacher does not belong to this school",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin, own-school Admin, or own-school Principal only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Grade or teacher not found",
             "content": {
               "application/json": {
                 "schema": {
