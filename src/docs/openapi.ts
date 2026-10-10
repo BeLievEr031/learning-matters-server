@@ -2892,7 +2892,7 @@ registry.registerPath({
 registry.registerPath({
   method: 'post',
   path: '/api/v1/teacher-assignments',
-  tags: ['Teacher Assignments'],
+  tags: ['Assignments'],
   summary: 'Assign teacher to grade and subject (Super Admin or School Admin)',
   security: [{ [bearerAuth.name]: [] }],
   request: {
@@ -2939,7 +2939,7 @@ registry.registerPath({
 registry.registerPath({
   method: 'get',
   path: '/api/v1/teacher-assignments',
-  tags: ['Teacher Assignments'],
+  tags: ['Assignments'],
   summary:
     'List teacher assignments with pagination and filters (Super Admin, School Admin, or Principal)',
   security: [{ [bearerAuth.name]: [] }],
@@ -2997,7 +2997,7 @@ registry.registerPath({
 registry.registerPath({
   method: 'get',
   path: '/api/v1/teacher-assignments/{assignmentId}',
-  tags: ['Teacher Assignments'],
+  tags: ['Assignments'],
   summary: 'Get teacher assignment by ID (Super Admin, School Staff)',
   security: [{ [bearerAuth.name]: [] }],
   request: {
@@ -3036,7 +3036,7 @@ registry.registerPath({
 registry.registerPath({
   method: 'patch',
   path: '/api/v1/teacher-assignments/{assignmentId}',
-  tags: ['Teacher Assignments'],
+  tags: ['Assignments'],
   summary: 'Update teacher assignment status or effective date (Super Admin or School Admin)',
   security: [{ [bearerAuth.name]: [] }],
   request: {
@@ -3082,7 +3082,7 @@ registry.registerPath({
 registry.registerPath({
   method: 'delete',
   path: '/api/v1/teacher-assignments/{assignmentId}',
-  tags: ['Teacher Assignments'],
+  tags: ['Assignments'],
   summary: 'Soft-delete teacher assignment (Super Admin or School Admin)',
   security: [{ [bearerAuth.name]: [] }],
   request: {
@@ -3116,7 +3116,7 @@ registry.registerPath({
 registry.registerPath({
   method: 'get',
   path: '/api/v1/teachers/{teacherId}/assignments',
-  tags: ['Teacher Assignments'],
+  tags: ['Assignments'],
   summary: 'List all assignments for a teacher (Super Admin, School Staff)',
   security: [{ [bearerAuth.name]: [] }],
   request: {
@@ -3155,7 +3155,7 @@ registry.registerPath({
 registry.registerPath({
   method: 'get',
   path: '/api/v1/grades/{gradeId}/teachers',
-  tags: ['Teacher Assignments'],
+  tags: ['Assignments'],
   summary: 'List all teachers assigned to a grade (Super Admin, School Staff)',
   security: [{ [bearerAuth.name]: [] }],
   request: {
@@ -3194,7 +3194,7 @@ registry.registerPath({
 registry.registerPath({
   method: 'get',
   path: '/api/v1/subjects/{subjectId}/teachers',
-  tags: ['Teacher Assignments'],
+  tags: ['Assignments'],
   summary: 'List all teachers assigned to a subject (Super Admin, School Staff)',
   security: [{ [bearerAuth.name]: [] }],
   request: {

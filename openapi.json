@@ -6647,7 +6647,7 @@
     "/api/v1/teacher-assignments": {
       "post": {
         "tags": [
-          "Teacher Assignments"
+          "Assignments"
         ],
         "summary": "Assign teacher to grade and subject (Super Admin or School Admin)",
         "security": [
@@ -6737,7 +6737,7 @@
       },
       "get": {
         "tags": [
-          "Teacher Assignments"
+          "Assignments"
         ],
         "summary": "List teacher assignments with pagination and filters (Super Admin, School Admin, or Principal)",
         "security": [
@@ -6911,7 +6911,7 @@
     "/api/v1/teacher-assignments/{assignmentId}": {
       "get": {
         "tags": [
-          "Teacher Assignments"
+          "Assignments"
         ],
         "summary": "Get teacher assignment by ID (Super Admin, School Staff)",
         "security": [
@@ -6994,7 +6994,7 @@
       },
       "patch": {
         "tags": [
-          "Teacher Assignments"
+          "Assignments"
         ],
         "summary": "Update teacher assignment status or effective date (Super Admin or School Admin)",
         "security": [
@@ -7086,7 +7086,7 @@
       },
       "delete": {
         "tags": [
-          "Teacher Assignments"
+          "Assignments"
         ],
         "summary": "Soft-delete teacher assignment (Super Admin or School Admin)",
         "security": [
@@ -7156,7 +7156,7 @@
     "/api/v1/teachers/{teacherId}/assignments": {
       "get": {
         "tags": [
-          "Teacher Assignments"
+          "Assignments"
         ],
         "summary": "List all assignments for a teacher (Super Admin, School Staff)",
         "security": [
@@ -7244,7 +7244,7 @@
     "/api/v1/grades/{gradeId}/teachers": {
       "get": {
         "tags": [
-          "Teacher Assignments"
+          "Assignments"
         ],
         "summary": "List all teachers assigned to a grade (Super Admin, School Staff)",
         "security": [
@@ -7332,7 +7332,7 @@
     "/api/v1/subjects/{subjectId}/teachers": {
       "get": {
         "tags": [
-          "Teacher Assignments"
+          "Assignments"
         ],
         "summary": "List all teachers assigned to a subject (Super Admin, School Staff)",
         "security": [

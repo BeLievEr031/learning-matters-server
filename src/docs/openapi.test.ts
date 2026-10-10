@@ -210,4 +210,26 @@ describe('OpenAPI Documentation & Swagger UI', () => {
       expect(res.text).toContain('Swagger UI');
     }
   });
+
+  it('contains expected tags for all school management modules', () => {
+    const paths = openApiDocument.paths;
+    const tags = new Set<string>();
+    for (const pathItem of Object.values(paths)) {
+      for (const operation of Object.values(pathItem as Record<string, { tags?: string[] }>)) {
+        if (operation.tags) {
+          for (const tag of operation.tags) {
+            tags.add(tag);
+          }
+        }
+      }
+    }
+
+    expect(tags.has('Schools')).toBe(true);
+    expect(tags.has('Boards')).toBe(true);
+    expect(tags.has('Grades')).toBe(true);
+    expect(tags.has('Subjects')).toBe(true);
+    expect(tags.has('Teachers')).toBe(true);
+    expect(tags.has('Students')).toBe(true);
+    expect(tags.has('Assignments')).toBe(true);
+  });
 });
