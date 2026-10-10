@@ -85,6 +85,13 @@
       "when": 1791132000000,
       "tag": "0011_add_class_teacher_to_grades",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791135000000,
+      "tag": "0012_add_audit_logs_table",
+      "breakpoints": true
     }
   ]
 }
