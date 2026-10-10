@@ -24,6 +24,7 @@ export const subjects = pgTable(
   (table) => [
     uniqueIndex('subjects_school_code_lower_idx').on(table.schoolId, sql`lower(${table.code})`),
     index('subjects_school_id_idx').on(table.schoolId),
+    index('subjects_school_status_idx').on(table.schoolId, table.status),
     index('subjects_status_idx').on(table.status),
     index('subjects_code_idx').on(table.code),
     index('subjects_created_at_id_idx').on(table.createdAt, table.id),
@@ -51,7 +52,9 @@ export const gradeSubjects = pgTable(
   (table) => [
     uniqueIndex('grade_subjects_grade_subject_idx').on(table.gradeId, table.subjectId),
     index('grade_subjects_school_id_idx').on(table.schoolId),
+    index('grade_subjects_school_status_idx').on(table.schoolId, table.status),
     index('grade_subjects_grade_id_idx').on(table.gradeId),
+    index('grade_subjects_grade_status_idx').on(table.gradeId, table.status),
     index('grade_subjects_subject_id_idx').on(table.subjectId),
     index('grade_subjects_status_idx').on(table.status),
   ],

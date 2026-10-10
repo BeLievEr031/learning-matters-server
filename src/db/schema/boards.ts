@@ -22,6 +22,7 @@ export const boards = pgTable(
   (table) => [
     uniqueIndex('boards_school_code_lower_idx').on(table.schoolId, sql`lower(${table.code})`),
     index('boards_school_id_idx').on(table.schoolId),
+    index('boards_school_status_idx').on(table.schoolId, table.status),
     index('boards_status_idx').on(table.status),
     index('boards_code_idx').on(table.code),
     index('boards_created_at_id_idx').on(table.createdAt, table.id),

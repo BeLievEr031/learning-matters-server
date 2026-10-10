@@ -36,20 +36,18 @@ function extractResourceFromPath(path: string): {
   const cleanPath = path.replace(/^\/api\/v\d+\//, '').replace(/^\//, '');
   const segments = cleanPath.split('/').filter(Boolean);
 
-  if (segments.length === 0) {
+  const first = segments[0];
+  if (!first) {
     return { resourceType: 'unknown', resourceId: null };
   }
 
-  let resourceType = segments[0];
-  let resourceId: string | null = null;
-
-  if (segments.length >= 2) {
-    resourceId = segments[1];
-  }
+  let resourceType: string = first;
+  let resourceId: string | null = segments[1] ?? null;
 
   // If nested sub-resource e.g. /schools/:schoolId/boards or /grades/:gradeId/subjects/:subjectId
-  if (segments.length >= 3 && !SUB_ACTIONS.has(segments[2])) {
-    resourceType = segments[2];
+  const third = segments[2];
+  if (third && !SUB_ACTIONS.has(third)) {
+    resourceType = third;
     resourceId = segments[3] ?? null;
   }
 

@@ -37,6 +37,7 @@ export const teachers = pgTable(
     ),
     uniqueIndex('teachers_school_email_lower_idx').on(table.schoolId, sql`lower(${table.email})`),
     index('teachers_school_id_idx').on(table.schoolId),
+    index('teachers_school_status_idx').on(table.schoolId, table.status),
     index('teachers_status_idx').on(table.status),
     index('teachers_user_id_idx').on(table.userId),
     index('teachers_created_at_id_idx').on(table.createdAt, table.id),

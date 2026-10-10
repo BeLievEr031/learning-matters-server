@@ -43,6 +43,8 @@ export const users = pgTable(
     index('users_created_at_id_idx').on(table.createdAt, table.id),
     index('users_deleted_at_idx').on(table.deletedAt),
     index('users_school_id_idx').on(table.schoolId),
+    index('users_school_role_idx').on(table.schoolId, table.role),
+    index('users_school_status_idx').on(table.schoolId, table.status),
   ],
 );
 

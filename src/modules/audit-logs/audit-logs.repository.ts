@@ -8,6 +8,9 @@ export class AuditLogsRepository {
 
   async create(data: NewAuditLog): Promise<AuditLog> {
     const [created] = await this.database.insert(auditLogs).values(data).returning();
+    if (!created) {
+      throw new Error('Failed to create audit log record');
+    }
     return created;
   }
 
