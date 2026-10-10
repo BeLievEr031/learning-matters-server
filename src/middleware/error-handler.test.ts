@@ -79,6 +79,15 @@ function createTestAppWithRoutes(): Express {
     throw new Error('Database connection crashed');
   });
 
+  app.get('/test-unhandled-authenticated', (req) => {
+    req.user = {
+      id: 'usr-999',
+      role: 'admin',
+      schoolId: 'sch-888',
+    };
+    throw new Error('Database connection crashed for school admin');
+  });
+
   app.use(notFoundHandler);
   app.use(errorHandler);
 
@@ -176,6 +185,14 @@ describe('Error Handling Middleware', () => {
 
   it('maps generic unhandled error to 500 standard error shape', async () => {
     const res = await request(testApp).get('/test-unhandled');
+    const body = res.body as ErrorResponsePayload;
+    expect(res.status).toBe(500);
+    expect(body.error.code).toBe('INTERNAL_SERVER_ERROR');
+    expect(body.error.requestId).toBeDefined();
+  });
+
+  it('maps unhandled error for authenticated request to 500 with requestId', async () => {
+    const res = await request(testApp).get('/test-unhandled-authenticated');
     const body = res.body as ErrorResponsePayload;
     expect(res.status).toBe(500);
     expect(body.error.code).toBe('INTERNAL_SERVER_ERROR');

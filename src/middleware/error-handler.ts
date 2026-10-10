@@ -66,21 +66,37 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
 
   // Handle generic / unexpected errors
   if (statusCode >= 500) {
+    const userContext = req.user
+      ? {
+          id: req.user.id,
+          role: req.user.role,
+          schoolId: req.user.schoolId,
+        }
+      : undefined;
+
     logger.error(
       {
         err,
         requestId,
         path: req.path,
         method: req.method,
+        ...(req.user?.id && { userId: req.user.id }),
+        ...(req.user?.schoolId && { schoolId: req.user.schoolId }),
       },
       'Server error occurred',
     );
 
-    captureException(err, {
-      requestId,
-      path: req.path,
-      method: req.method,
-    });
+    captureException(
+      err,
+      {
+        requestId,
+        path: req.path,
+        method: req.method,
+        ...(req.user?.id && { userId: req.user.id }),
+        ...(req.user?.schoolId && { schoolId: req.user.schoolId }),
+      },
+      userContext,
+    );
 
     // In production, never leak internals or stacks for 500 errors
     if (env.NODE_ENV === 'production') {

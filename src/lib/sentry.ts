@@ -44,18 +44,45 @@ export function initSentry(dsn?: string): boolean {
 
 initSentry(env.SENTRY_DSN);
 
+export interface SentryUserContext {
+  id?: string | undefined;
+  role?: string | undefined;
+  schoolId?: string | null | undefined;
+  [key: string]: unknown;
+}
+
 /**
  * Captures an unhandled exception or 5xx server error to Sentry.
  */
-export function captureException(err: unknown, extraContext?: Record<string, unknown>): void {
+export function captureException(
+  err: unknown,
+  extraContext?: Record<string, unknown>,
+  userContext?: SentryUserContext,
+): void {
   if (isSentryInitialized) {
-    if (extraContext) {
-      Sentry.captureException(err, {
-        extra: extraContext,
-      });
-    } else {
+    Sentry.withScope((scope) => {
+      if (extraContext) {
+        scope.setExtras(extraContext);
+      }
+
+      if (userContext) {
+        scope.setUser({
+          ...(userContext.id !== undefined && { id: userContext.id }),
+          ...(userContext.role !== undefined && { role: userContext.role }),
+          ...(userContext.schoolId !== undefined &&
+            userContext.schoolId !== null && { schoolId: userContext.schoolId }),
+        });
+
+        if (userContext.schoolId) {
+          scope.setTag('schoolId', userContext.schoolId);
+        }
+        if (userContext.role) {
+          scope.setTag('userRole', userContext.role);
+        }
+      }
+
       Sentry.captureException(err);
-    }
+    });
   }
 }
 

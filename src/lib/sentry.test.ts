@@ -3,6 +3,21 @@ import type { ErrorEvent } from '@sentry/node';
 
 const mockInit = vi.fn();
 const mockCaptureException = vi.fn();
+const mockSetExtras = vi.fn();
+const mockSetUser = vi.fn();
+const mockSetTag = vi.fn();
+
+const mockScope = {
+  setExtras: (...args: unknown[]): void => {
+    mockSetExtras(...args);
+  },
+  setUser: (...args: unknown[]): void => {
+    mockSetUser(...args);
+  },
+  setTag: (...args: unknown[]): void => {
+    mockSetTag(...args);
+  },
+};
 
 vi.mock('@sentry/node', () => ({
   init: (...args: unknown[]): void => {
@@ -10,6 +25,9 @@ vi.mock('@sentry/node', () => ({
   },
   captureException: (...args: unknown[]): void => {
     mockCaptureException(...args);
+  },
+  withScope: (callback: (scope: unknown) => void): void => {
+    callback(mockScope);
   },
 }));
 
@@ -86,12 +104,34 @@ describe('Sentry Integration', () => {
       initSentry('https://dummy@o0.ingest.sentry.io/0');
 
       captureException(new Error('Test error'));
-      expect(mockCaptureException).toHaveBeenCalled();
+      expect(mockCaptureException).toHaveBeenCalledWith(expect.any(Error));
 
       captureException(new Error('Test error with context'), { userId: '123' });
-      expect(mockCaptureException).toHaveBeenCalledWith(expect.any(Error), {
-        extra: { userId: '123' },
+      expect(mockSetExtras).toHaveBeenCalledWith({ userId: '123' });
+      expect(mockCaptureException).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    it('enriches Sentry context with userContext and tags', () => {
+      initSentry('https://dummy@o0.ingest.sentry.io/0');
+
+      captureException(
+        new Error('Unhandled failure'),
+        { requestId: 'req-abc', path: '/api/v1/students' },
+        { id: 'usr-1', role: 'admin', schoolId: 'sch-1' },
+      );
+
+      expect(mockSetExtras).toHaveBeenCalledWith({
+        requestId: 'req-abc',
+        path: '/api/v1/students',
       });
+      expect(mockSetUser).toHaveBeenCalledWith({
+        id: 'usr-1',
+        role: 'admin',
+        schoolId: 'sch-1',
+      });
+      expect(mockSetTag).toHaveBeenCalledWith('schoolId', 'sch-1');
+      expect(mockSetTag).toHaveBeenCalledWith('userRole', 'admin');
+      expect(mockCaptureException).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 });
