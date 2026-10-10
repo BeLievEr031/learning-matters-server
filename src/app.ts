@@ -4,6 +4,7 @@ import { BODY_SIZE_LIMIT, API_V1 } from './config/constants.js';
 import { requestIdMiddleware, httpLoggerMiddleware } from './middleware/request-id.js';
 import { helmetMiddleware, corsMiddleware, hppMiddleware } from './middleware/security.js';
 import { globalRateLimiter } from './middleware/rate-limit.js';
+import { auditLogMiddleware } from './middleware/audit-log.js';
 import { notFoundHandler } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { healthRouter } from './modules/health/health.routes.js';
@@ -66,7 +67,10 @@ export function createApp(): Express {
   // 7. Global rate limiting
   app.use(globalRateLimiter);
 
-  // 8. Application routes
+  // 8. Audit logging for write mutations
+  app.use(auditLogMiddleware);
+
+  // 9. Application routes
   app.use(healthRouter);
   app.use(metricsRouter);
   app.use(docsRouter);
