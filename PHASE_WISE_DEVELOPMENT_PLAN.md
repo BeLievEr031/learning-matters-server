@@ -1056,6 +1056,7 @@ src/
 │       └── index.ts          ⚠️ needs updates
 │   ├── seed.ts               ✅ Phase 10
 ├── docs/                     ✅ Phase 11
+├── tests/                    ✅ Phase 12
 ├── middleware/
 │   ├── authenticate.ts  ✅
 │   ├── authorize.ts     ⚠️ needs 6-role + school scope rebuild
