@@ -19,8 +19,14 @@
   - [Docker Compose Quick Start](#docker-compose-quick-start)
 - [Environment Variables](#environment-variables)
 - [Available Scripts](#available-scripts)
+- [Role Hierarchy & RBAC](#role-hierarchy--rbac)
 - [API Overview & Documentation](#api-overview--documentation)
-- [Database & Migrations](#database--migrations)
+  - [Core Endpoints](#core-endpoints)
+  - [School Management Modules](#school-management-modules)
+  - [Query Parameters & Pagination](#query-parameters--pagination)
+- [Database & Seed Data](#database--seed-data)
+  - [Migrations](#migrations)
+  - [Development Seed](#development-seed)
 - [Background Jobs & Workers](#background-jobs--workers)
 - [Observability & Health Checks](#observability--health-checks)
 - [Testing](#testing)
@@ -39,10 +45,10 @@ graph TD
     Proxy -->|Load Balancer| App[Express 5 API Server]
 
     subgraph Core App
-        App --> Mid[Security & Rate Limiting Middleware]
+        App --> Mid[Security, Rate Limiting & Auth Middleware]
         Mid --> Router[App Router v1]
         Router --> Controller[Controller Layer]
-        Controller --> Service[Service Layer]
+        Controller --> Service[Service Layer + Business Guards]
         Service --> Repo[Repository Layer]
     end
 
@@ -74,7 +80,7 @@ graph TD
 | **ORM / Query Builder** | Drizzle ORM              | Type-safe SQL schema definitions and migrations          |
 | **Cache & Queues**      | Redis 7 + BullMQ         | Distributed rate limiting and resilient worker queues    |
 | **Security**            | Helmet, CORS, HPP        | Strict HTTP headers, parameter pollution prevention      |
-| **Auth**                | Argon2id + JWT           | Rotating opaque refresh tokens with reuse detection      |
+| **Auth & RBAC**         | Argon2id + JWT           | Rotating opaque refresh tokens with 6-role hierarchy     |
 | **Validation**          | Zod 3                    | Type inference and runtime input sanitization            |
 | **Docs**                | OpenAPI 3.0 + Swagger UI | Generated automatically from Zod schemas                 |
 | **Metrics & Errors**    | Prom-client + Sentry     | Route-normalized histograms and scrubbed error captures  |
@@ -91,15 +97,26 @@ server/
 ├── src/
 │   ├── config/              # Validated environment schemas & constants
 │   ├── db/                  # Connection pool, transactions, and Drizzle schemas
-│   │   └── schema/          # Table definitions (users, refresh_tokens)
+│   │   ├── schema/          # Domain schemas (schools, boards, grades, subjects, etc.)
+│   │   ├── migrate.ts       # Database migration runner
+│   │   ├── pool.ts          # PostgreSQL pool connection
+│   │   └── seed.ts          # Idempotent development database seeder
 │   ├── docs/                # OpenAPI specification generator & Swagger UI
 │   ├── jobs/                # BullMQ queues, job workers, and email worker
-│   ├── lib/                 # Shared utilities (logger, metrics, redis, sentry)
-│   ├── middleware/          # Express middlewares (security, auth, rate limit)
+│   ├── lib/                 # Shared utilities (logger, metrics, redis, pagination)
+│   ├── middleware/          # Express middlewares (security, auth, authorize, rate limit)
 │   ├── modules/             # Modular feature domains
-│   │   ├── auth/            # Authentication, token rotation, sessions
-│   │   ├── health/          # Kubernetes /health and /ready probes
+│   │   ├── auth/            # Authentication, token rotation, sessions, /me
+│   │   ├── boards/          # Educational boards management
+│   │   ├── grades/          # Grades/classes and class teacher assignments
+│   │   ├── health/          # Kubernetes /healthz, /live and /ready probes
 │   │   ├── metrics/         # Prometheus /metrics endpoint
+│   │   ├── principals/      # School principal management
+│   │   ├── schools/         # School tenants and configuration
+│   │   ├── students/        # Student admissions, profiles, and transfers
+│   │   ├── subjects/        # Master subjects and grade-subject mappings
+│   │   ├── teacher-assignments/ # Subject/grade teacher assignments
+│   │   ├── teachers/        # Teacher directory and employee profiles
 │   │   └── users/           # User management, CRUD, pagination
 │   ├── server.ts            # API HTTP server entrypoint
 │   └── worker.ts            # Background job consumer entrypoint
@@ -149,7 +166,14 @@ server/
    npm run db:migrate
    ```
 
-5. **Start API server and background worker in watch mode:**
+5. **Seed development database:**
+
+   ```bash
+   npm run db:seed
+   ```
+
+6. **Start API server and background worker in watch mode:**
+
    ```bash
    # Terminal 1: API Server
    npm run dev
@@ -215,18 +239,44 @@ All environment variables are validated at startup with Zod. Missing or malforme
 | `npm run build`            | `tsup`                             | Compile production bundle to `dist/`  |
 | `npm start`                | `node dist/server.js`              | Run compiled production server        |
 | `npm run typecheck`        | `tsc --noEmit`                     | Strict TypeScript compiler validation |
-| `npm run lint`             | `eslint src --ext .ts`             | Lint TypeScript source files          |
-| `npm run format:check`     | `prettier --check`                 | Verify formatting across files        |
-| `npm run format`           | `prettier --write`                 | Auto-format files with Prettier       |
+| `npm run lint`             | `eslint src`                       | Lint TypeScript source files          |
+| `npm run lint:fix`         | `eslint src --fix`                 | Auto-fix linting issues               |
+| `npm run format:check`     | `prettier --check "src/**/*.ts"`   | Verify formatting across files        |
+| `npm run format`           | `prettier --write "src/**/*.ts"`   | Auto-format files with Prettier       |
 | `npm test`                 | `vitest run`                       | Execute unit and integration tests    |
 | `npm run test:unit`        | `vitest run --project unit`        | Fast unit test suite                  |
 | `npm run test:integration` | `vitest run --project integration` | Integration test suite                |
 | `npm run test:coverage`    | `vitest run --coverage`            | Generate v8 coverage report           |
 | `npm run db:migrate`       | `tsx src/db/migrate.ts`            | Execute pending database migrations   |
 | `npm run db:generate`      | `drizzle-kit generate`             | Generate SQL migration from schema    |
+| `npm run db:seed`          | `tsx src/db/seed.ts`               | Seed development database             |
 | `npm run docs:generate`    | `tsx src/docs/generate.ts`         | Re-generate `openapi.json`            |
 | `npm run docker:up`        | `docker compose up -d`             | Launch local Docker Compose stack     |
 | `npm run docker:down`      | `docker compose down`              | Tear down Docker Compose stack        |
+
+---
+
+## Role Hierarchy & RBAC
+
+The system implements a 6-role hierarchical access control model with strict school scoping:
+
+```
+super_admin
+  └─ admin (school-admin)
+       └─ principal
+            └─ class_teacher
+                 └─ teacher
+                      └─ student
+```
+
+| Role            | Scope               | Privileges & Description                                                                     |
+| --------------- | ------------------- | -------------------------------------------------------------------------------------------- |
+| `super_admin`   | Global (all schools)| Full unrestricted system management, school creation, cross-school access.                   |
+| `admin`         | Single school       | Full administration of own school (boards, grades, subjects, staff, students, assignments). |
+| `principal`     | Single school       | Read-heavy leadership view: inspect grades, teachers, students, and assignment status.       |
+| `class_teacher` | Assigned grade      | Teacher privileges + direct roster and student overview for their designated class/section. |
+| `teacher`       | Assigned subjects   | Subject and assignment roster access for their assigned curriculum classes.                  |
+| `student`       | Self-only           | Read-only access to their own profile, enrolled subjects, and assignments.                   |
 
 ---
 
@@ -245,20 +295,110 @@ Interactive Swagger documentation is available in non-production environments at
   - `POST /refresh`: Rotate refresh token with reuse detection.
   - `POST /logout`: Revoke single refresh session.
   - `POST /logout-all`: Revoke all sessions across all devices for user.
+  - `GET /me`: Fetch authenticated user profile and roles.
 - **User Management (`/api/v1/users`)**
   - `GET /me`: Fetch authenticated user profile.
-  - `GET /`: Cursor-paginated user directory (`admin` only).
-  - `GET /:id`: Fetch user by ID (`admin` or account owner).
-  - `PATCH /:id`: Update user role or active status (`admin` or owner).
-  - `DELETE /:id`: Soft-delete user (`admin` only).
+  - `PATCH /me`: Self-update profile details.
+  - `GET /`: Cursor/offset paginated user directory (`admin` / `super_admin`).
+  - `POST /`: Create a new user with role and school association.
+  - `GET /:id`: Fetch user by ID.
+  - `PATCH /:id`: Update user role or active status.
+  - `DELETE /:id`: Soft-delete user account.
 - **Probes & Operations**
-  - `GET /health`: Liveness probe (HTTP server status and uptime).
+  - `GET /healthz`: Liveness probe (HTTP server status and uptime).
+  - `GET /live`: Kubernetes liveness check.
   - `GET /ready`: Readiness probe (deep ping of PostgreSQL and Redis).
   - `GET /metrics`: Protected Prometheus metrics (scrape endpoint).
 
+### School Management Modules
+
+- **Schools (`/api/v1/schools`)**
+  - `POST /`: Create new school tenant (`super_admin` only).
+  - `GET /`: List schools with search, status filtering, and pagination.
+  - `GET /:schoolId`: Get school details (Super Admin or school staff).
+  - `PATCH /:schoolId`: Update school configuration (`super_admin` only).
+  - `DELETE /:schoolId`: Soft-delete school (`super_admin` only).
+  - `GET /:schoolId/principal`: Get principal profile of school.
+  - `PUT /:schoolId/principal`: Upsert principal profile for school.
+- **Boards (`/api/v1/schools/:schoolId/boards` & `/api/v1/boards/:boardId`)**
+  - `POST /api/v1/schools/:schoolId/boards`: Create education board (e.g. CBSE, ICSE).
+  - `GET /api/v1/schools/:schoolId/boards`: List boards for school with filtering.
+  - `GET /api/v1/boards/:boardId`: Get board by ID.
+  - `PATCH /api/v1/boards/:boardId`: Update board details.
+  - `DELETE /api/v1/boards/:boardId`: Soft-delete board (guarded if active grades exist).
+- **Grades (`/api/v1/boards/:boardId/grades` & `/api/v1/grades/:gradeId`)**
+  - `POST /api/v1/boards/:boardId/grades`: Create grade/class under board.
+  - `GET /api/v1/boards/:boardId/grades`: List grades under board.
+  - `GET /api/v1/grades/:gradeId`: Get grade details.
+  - `PATCH /api/v1/grades/:gradeId`: Update grade details.
+  - `DELETE /api/v1/grades/:gradeId`: Soft-delete grade (guarded if active students/assignments exist).
+  - `GET /api/v1/grades/:gradeId/class-teacher`: Get assigned class teacher.
+  - `PUT /api/v1/grades/:gradeId/class-teacher`: Assign/remove class teacher.
+- **Subjects (`/api/v1/grades/:gradeId/subjects` & `/api/v1/subjects/:subjectId`)**
+  - `POST /api/v1/grades/:gradeId/subjects`: Create or associate subject to grade.
+  - `GET /api/v1/grades/:gradeId/subjects`: List subjects associated with grade.
+  - `DELETE /api/v1/grades/:gradeId/subjects/:subjectId`: Disassociate subject from grade.
+  - `GET /api/v1/subjects/:subjectId`: Get master subject details.
+  - `PATCH /api/v1/subjects/:subjectId`: Update master subject.
+  - `DELETE /api/v1/subjects/:subjectId`: Soft-delete subject (guarded if active associations exist).
+- **Teachers (`/api/v1/schools/:schoolId/teachers` & `/api/v1/teachers/:teacherId`)**
+  - `POST /api/v1/schools/:schoolId/teachers`: Register teacher profile.
+  - `GET /api/v1/schools/:schoolId/teachers`: List teachers with search and filters.
+  - `GET /api/v1/teachers/:teacherId`: Get teacher profile.
+  - `PATCH /api/v1/teachers/:teacherId`: Update teacher profile.
+  - `DELETE /api/v1/teachers/:teacherId`: Soft-delete teacher (guarded if active assignments exist).
+- **Students (`/api/v1/grades/:gradeId/students` & `/api/v1/students/:studentId`)**
+  - `POST /api/v1/grades/:gradeId/students`: Enroll student in grade.
+  - `GET /api/v1/grades/:gradeId/students`: List students in grade.
+  - `GET /api/v1/students/:studentId`: Get student profile.
+  - `PATCH /api/v1/students/:studentId`: Update student profile.
+  - `PATCH /api/v1/students/:studentId/transfer`: Transfer student to another grade.
+  - `DELETE /api/v1/students/:studentId`: Soft-delete student profile.
+- **Teacher Assignments (`/api/v1/teacher-assignments`)**
+  - `POST /api/v1/teacher-assignments`: Assign teacher to grade and subject.
+  - `GET /api/v1/teacher-assignments`: List assignments with search and filters.
+  - `GET /api/v1/teacher-assignments/:assignmentId`: Get assignment by ID.
+  - `PATCH /api/v1/teacher-assignments/:assignmentId`: Update assignment status.
+  - `DELETE /api/v1/teacher-assignments/:assignmentId`: Soft-delete assignment.
+  - `GET /api/v1/teachers/:teacherId/assignments`: List assignments for teacher.
+  - `GET /api/v1/grades/:gradeId/teachers`: List teachers assigned to grade.
+  - `GET /api/v1/subjects/:subjectId/teachers`: List teachers assigned to subject.
+
+### Query Parameters & Pagination
+
+All list endpoints support unified query parameters:
+
+```
+GET /api/v1/schools?search=international&status=active&sortBy=createdAt&sortOrder=desc&page=1&limit=20
+```
+
+- **`search`**: Case-insensitive substring matching against names, codes, or emails.
+- **`status`**: State filtering (e.g. `active`, `inactive`, `suspended`).
+- **`sortBy` & `sortOrder`**: Sort by allowed column names (`asc` or `desc`).
+- **`page` & `limit`**: Offset-based pagination with unified `meta` response block:
+
+```json
+{
+  "success": true,
+  "data": [...],
+  "pageInfo": {
+    "nextCursor": null,
+    "hasMore": false
+  },
+  "meta": {
+    "total": 42,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 3
+  }
+}
+```
+
 ---
 
-## Database & Migrations
+## Database & Seed Data
+
+### Migrations
 
 All schema modifications are tracked via Drizzle ORM migrations in `drizzle/`.
 
@@ -272,6 +412,26 @@ All schema modifications are tracked via Drizzle ORM migrations in `drizzle/`.
    ```bash
    npm run db:migrate
    ```
+
+### Development Seed
+
+The seed script creates a complete development scenario with realistic data:
+
+```bash
+npm run db:seed
+```
+
+**Pre-seeded Accounts (Password for all: `Password123!@#`):**
+
+- **Super Admin:** `superadmin@learning-matters.com` (System-wide access)
+- **School Admin:** `admin@abcschool.edu` (ABC International School)
+- **Principal:** `principal@abcschool.edu` (ABC International School)
+- **Teachers:**
+  - `john.doe@abcschool.edu` (Class teacher of Grade 5-A, Math teacher)
+  - `sarah.connor@abcschool.edu` (English teacher)
+  - `david.miller@abcschool.edu` (Class teacher of Grade 6-A, Science teacher)
+- **Schools:** ABC International School (`ABC001`) and Delhi Public School (`DPS001`)
+- **Curriculum:** CBSE and ICSE boards, 6 grades, 10 subjects, 8 students
 
 ---
 
