@@ -844,14 +844,15 @@ chore(ci): add 80% coverage threshold gate for all new modules
 
 > **Goal:** Security, performance, and operational readiness.
 > **Estimated effort:** 1–2 days
+> **Status:** ✅ Completed
 
-### 13.1 — Per-Route Rate Limiting
+### 13.1 — Per-Route Rate Limiting ✅
 
 ```
 feat(middleware): add per-route and per-school rate limiting for write endpoints
 ```
 
-### 13.2 — Audit Log
+### 13.2 — Audit Log ✅
 
 ```
 feat(db): add audit_logs table for write-operation traceability
@@ -859,13 +860,13 @@ feat(db): add audit_logs table for write-operation traceability
 feat(middleware): add audit logging middleware triggered on successful mutations
 ```
 
-### 13.3 — Database Query Performance
+### 13.3 — Database Query Performance ✅
 
 ```
 perf(db): add composite indexes for high-frequency list and filter queries
 ```
 
-### 13.4 — Sentry Error Tracking
+### 13.4 — Sentry Error Tracking ✅
 
 ```
 feat(config): enrich Sentry error context with schoolId and userId from req.user
@@ -1032,34 +1033,38 @@ src/
 │   ├── users/          ✅ exists — needs role expansion
 │   ├── health/         ✅ exists
 │   ├── metrics/        ✅ exists
-│   ├── schools/        🔲 Phase 1
-│   ├── boards/         🔲 Phase 2
-│   ├── grades/         🔲 Phase 3
-│   ├── subjects/       🔲 Phase 4
-│   ├── teachers/       🔲 Phase 5
-│   ├── students/       🔲 Phase 6
-│   └── assignments/    🔲 Phase 7
+│   ├── schools/        ✅ Phase 1
+│   ├── boards/         ✅ Phase 2
+│   ├── grades/         ✅ Phase 3
+│   ├── subjects/       ✅ Phase 4
+│   ├── teachers/       ✅ Phase 5
+│   ├── students/       ✅ Phase 6
+│   ├── teacher-assignments/ ✅ Phase 7
+│   ├── principals/     ✅ Phase 8
+│   └── audit-logs/     ✅ Phase 13
 ├── db/
 │   └── schema/
-│       ├── users.ts          ⚠️ needs role expansion + school_id
+│       ├── users.ts          ✅ Phase 0
 │       ├── refresh-tokens.ts ✅
-│       ├── schools.ts        🔲 Phase 1
-│       ├── boards.ts         🔲 Phase 2
-│       ├── grades.ts         🔲 Phase 3
-│       ├── subjects.ts       🔲 Phase 4
-│       ├── grade-subjects.ts 🔲 Phase 4
-│       ├── teachers.ts       🔲 Phase 5
-│       ├── students.ts       🔲 Phase 6
-│       ├── assignments.ts    🔲 Phase 7
-│       ├── principals.ts     🔲 Phase 8
-│       ├── audit-logs.ts     🔲 Phase 13
-│       └── index.ts          ⚠️ needs updates
+│       ├── schools.ts        ✅ Phase 1
+│       ├── boards.ts         ✅ Phase 2
+│       ├── grades.ts         ✅ Phase 3
+│       ├── subjects.ts       ✅ Phase 4
+│       ├── grade-subjects.ts ✅ Phase 4
+│       ├── teachers.ts       ✅ Phase 5
+│       ├── students.ts       ✅ Phase 6
+│       ├── teacher-assignments.ts ✅ Phase 7
+│       ├── principals.ts     ✅ Phase 8
+│       ├── audit-logs.ts     ✅ Phase 13
+│       └── index.ts          ✅
 │   ├── seed.ts               ✅ Phase 10
 ├── docs/                     ✅ Phase 11
 ├── tests/                    ✅ Phase 12
 ├── middleware/
 │   ├── authenticate.ts  ✅
-│   ├── authorize.ts     ⚠️ needs 6-role + school scope rebuild
+│   ├── authorize.ts     ✅ Phase 0
+│   ├── rate-limit.ts    ✅ Phase 13
+│   ├── audit-log.ts     ✅ Phase 13
 │   └── ...
 └── lib/
     ├── pagination.ts    ✅ Phase 9
