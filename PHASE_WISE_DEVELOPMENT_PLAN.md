@@ -1054,6 +1054,7 @@ src/
 │       ├── principals.ts     🔲 Phase 8
 │       ├── audit-logs.ts     🔲 Phase 13
 │       └── index.ts          ⚠️ needs updates
+│   ├── seed.ts               ✅ Phase 10
 ├── middleware/
 │   ├── authenticate.ts  ✅
 │   ├── authorize.ts     ⚠️ needs 6-role + school scope rebuild
