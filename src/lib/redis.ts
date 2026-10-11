@@ -5,7 +5,7 @@ import { registerCleanupTask } from './cleanup.js';
 
 export function createRedisClient(): Redis {
   const REDIS_URL = env.REDIS_URL;
-  const isTls = REDIS_URL.startsWith('rediss://');
+  const isTls = REDIS_URL.startsWith('rediss://') || REDIS_URL.includes('upstash.io');
 
   const client = new Redis(REDIS_URL, {
     maxRetriesPerRequest: null,
@@ -24,6 +24,14 @@ export function createRedisClient(): Redis {
       }
       return Math.min(times * 50, 2000);
     },
+  });
+
+  client.on('connect', () => {
+    logger.info('Redis connection established');
+  });
+
+  client.on('ready', () => {
+    logger.info('Redis client ready');
   });
 
   client.on('error', (err: Error) => {
