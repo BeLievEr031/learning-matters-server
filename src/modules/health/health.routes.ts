@@ -57,6 +57,16 @@ healthRouter.get('/ready', async (_req: Request, res: Response) => {
       database: dbOk ? 'ok' : 'error',
       redis: redisOk ? 'ok' : 'error',
     },
+    services: {
+      database: {
+        status: dbOk ? 'up' : 'down',
+        ...(dbErr && { error: dbErr }),
+      },
+      redis: {
+        status: redisOk ? 'up' : 'down',
+        ...(redisErr && { error: redisErr }),
+      },
+    },
     ...(!isHealthy && {
       error: [dbErr, redisErr].filter(Boolean).join('; '),
     }),
