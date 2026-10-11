@@ -22,6 +22,10 @@ import {
   type PaginatedResult,
 } from '../../lib/pagination.js';
 
+export interface GradeWithTeacher extends Grade {
+  classTeacher?: Teacher | null;
+}
+
 export class GradesService {
   constructor(
     private readonly repo: GradesRepository = gradesRepository,
@@ -84,7 +88,7 @@ export class GradesService {
     input: CreateGradeInput,
     callerSchoolId?: string | null,
     callerRole?: UserRole,
-  ): Promise<Grade> {
+  ): Promise<GradeWithTeacher> {
     const board = await this.getAndVerifyBoardAccess(boardId, callerSchoolId, callerRole);
 
     const normalizedCode = input.code.trim().toUpperCase();
@@ -99,27 +103,40 @@ export class GradesService {
       throw new ConflictError('Grade with this number and section already exists for this board');
     }
 
-    return this.repo.create({
+    const created = await this.repo.create({
       schoolId: board.schoolId,
       boardId,
-      name: input.name.trim(),
+      name: input.name,
       code: normalizedCode,
       gradeNumber: input.gradeNumber,
       section: normalizedSection,
       capacity: input.capacity,
       status: input.status,
     });
+
+    return {
+      ...created,
+      classTeacher: null,
+    };
   }
 
   /**
-   * Retrieve a grade by ID with school-scoped access check.
+   * Retrieve a grade by ID with school-scoped access check and class teacher details.
    */
   async getGradeById(
     gradeId: string,
     callerSchoolId?: string | null,
     callerRole?: UserRole,
-  ): Promise<Grade> {
-    return this.getAndVerifyGradeAccess(gradeId, callerSchoolId, callerRole);
+  ): Promise<GradeWithTeacher> {
+    const grade = await this.getAndVerifyGradeAccess(gradeId, callerSchoolId, callerRole);
+    const classTeacher = grade.classTeacherId
+      ? await this.teachersRepo.findById(grade.classTeacherId)
+      : null;
+
+    return {
+      ...grade,
+      classTeacher,
+    };
   }
 
   /**
@@ -131,7 +148,7 @@ export class GradesService {
     input: UpdateGradeInput,
     callerSchoolId?: string | null,
     callerRole?: UserRole,
-  ): Promise<Grade> {
+  ): Promise<GradeWithTeacher> {
     const grade = await this.getAndVerifyGradeAccess(gradeId, callerSchoolId, callerRole);
 
     const targetGradeNumber = input.gradeNumber ?? grade.gradeNumber;
@@ -162,7 +179,14 @@ export class GradesService {
       throw new NotFoundError('Grade not found');
     }
 
-    return updated;
+    const classTeacher = updated.classTeacherId
+      ? await this.teachersRepo.findById(updated.classTeacherId)
+      : null;
+
+    return {
+      ...updated,
+      classTeacher,
+    };
   }
 
   /**
@@ -190,14 +214,14 @@ export class GradesService {
   }
 
   /**
-   * List grades under a board with cursor pagination and status/section filters.
+   * List grades under a board with cursor pagination, filters, and populated class teacher details.
    */
   async listGradesByBoard(
     boardId: string,
     query: ListGradesQuery,
     callerSchoolId?: string | null,
     callerRole?: UserRole,
-  ): Promise<PaginatedResult<Grade>> {
+  ): Promise<PaginatedResult<GradeWithTeacher>> {
     await this.getAndVerifyBoardAccess(boardId, callerSchoolId, callerRole);
 
     const cursor = query.cursor ? decodeCursor(query.cursor) : undefined;
@@ -210,7 +234,30 @@ export class GradesService {
       sortOrder: query.sortOrder,
     });
 
-    return buildPaginatedResponse(rawItems, query.limit, (grade) => ({
+    const teacherIds = Array.from(
+      new Set(
+        rawItems
+          .map((g) => g.classTeacherId)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0),
+      ),
+    );
+
+    const teachersMap = new Map<string, Teacher>();
+    if (teacherIds.length > 0) {
+      await Promise.all(
+        teacherIds.map(async (tId) => {
+          const t = await this.teachersRepo.findById(tId);
+          if (t) teachersMap.set(tId, t);
+        }),
+      );
+    }
+
+    const itemsWithTeacher: GradeWithTeacher[] = rawItems.map((grade) => ({
+      ...grade,
+      classTeacher: grade.classTeacherId ? (teachersMap.get(grade.classTeacherId) ?? null) : null,
+    }));
+
+    return buildPaginatedResponse(itemsWithTeacher, query.limit, (grade) => ({
       createdAt: grade.createdAt,
       id: grade.id,
     }));
@@ -224,13 +271,14 @@ export class GradesService {
     teacherId: string | null,
     callerSchoolId?: string | null,
     callerRole?: UserRole,
-  ): Promise<Grade> {
+  ): Promise<GradeWithTeacher> {
     const grade = await this.getAndVerifyGradeAccess(gradeId, callerSchoolId, callerRole);
 
     if (grade.status !== 'active') {
       throw new BadRequestError('Cannot assign class teacher to an inactive grade');
     }
 
+    let assignedTeacher: Teacher | null = null;
     if (teacherId !== null) {
       const teacher = await this.teachersRepo.findById(teacherId);
       if (!teacher) {
@@ -244,6 +292,7 @@ export class GradesService {
       if (teacher.status !== 'active') {
         throw new BadRequestError('Teacher is not active');
       }
+      assignedTeacher = teacher;
     }
 
     const updated = await this.repo.setClassTeacher(gradeId, teacherId);
@@ -251,7 +300,10 @@ export class GradesService {
       throw new NotFoundError('Grade not found');
     }
 
-    return updated;
+    return {
+      ...updated,
+      classTeacher: assignedTeacher,
+    };
   }
 
   /**
