@@ -103,7 +103,7 @@ export class GradesService {
       throw new ConflictError('Grade with this number and section already exists for this board');
     }
 
-    const created = await this.repo.create({
+    return this.repo.create({
       schoolId: board.schoolId,
       boardId,
       name: input.name,
@@ -113,11 +113,6 @@ export class GradesService {
       capacity: input.capacity,
       status: input.status,
     });
-
-    return {
-      ...created,
-      classTeacher: null,
-    };
   }
 
   /**
@@ -129,10 +124,11 @@ export class GradesService {
     callerRole?: UserRole,
   ): Promise<GradeWithTeacher> {
     const grade = await this.getAndVerifyGradeAccess(gradeId, callerSchoolId, callerRole);
-    const classTeacher = grade.classTeacherId
-      ? await this.teachersRepo.findById(grade.classTeacherId)
-      : null;
+    if (!grade.classTeacherId) {
+      return grade;
+    }
 
+    const classTeacher = await this.teachersRepo.findById(grade.classTeacherId);
     return {
       ...grade,
       classTeacher,
