@@ -76,7 +76,7 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
-    "@sentry/node": "^11.4.0",
+    "@sentry/node": "^11.6.0",
     "argon2": "^0.45.1",
     "bullmq": "^6.3.11",
     "cookie-parser": "^1.4.7",
