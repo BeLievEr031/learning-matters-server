@@ -14,13 +14,20 @@ const VALID_ROLES: ReadonlySet<string> = new Set<UserRole>([
 ]);
 
 export function authenticate(req: Request, _res: Response, next: NextFunction): void {
-  const authHeader = req.headers.authorization;
+  let token: string | undefined;
 
-  if (!authHeader?.startsWith('Bearer ')) {
-    throw new UnauthorizedError('Missing or malformed Authorization header');
+  const rawCookieToken: unknown = req.cookies.accessToken;
+  const cookieToken = typeof rawCookieToken === 'string' ? rawCookieToken.trim() : undefined;
+
+  if (cookieToken) {
+    token = cookieToken;
+  } else if (req.headers.authorization?.startsWith('Bearer ')) {
+    token = req.headers.authorization.slice(7).trim();
   }
 
-  const token = authHeader.slice(7).trim();
+  if (!token) {
+    throw new UnauthorizedError('Missing or malformed Authorization header');
+  }
 
   try {
     const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET);

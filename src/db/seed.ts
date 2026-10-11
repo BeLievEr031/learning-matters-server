@@ -235,11 +235,35 @@ export async function seedDatabase(): Promise<void> {
     parallelism: ARGON2_PARALLELISM,
   });
 
+  const frontendAdminPasswordHash = await argon2.hash('Admin@123456', {
+    memoryCost: ARGON2_MEMORY_COST,
+    timeCost: ARGON2_TIME_COST,
+    parallelism: ARGON2_PARALLELISM,
+  });
+
+  const frontendTeacherPasswordHash = await argon2.hash('Teacher@123456', {
+    memoryCost: ARGON2_MEMORY_COST,
+    timeCost: ARGON2_TIME_COST,
+    parallelism: ARGON2_PARALLELISM,
+  });
+
   // 1. Super Admin user (school-agnostic, schoolId = null)
   logger.info('Seeding super admin user...');
   await getOrInsertUser({
     email: 'superadmin@learning-matters.com',
     passwordHash,
+    role: 'super_admin',
+    schoolId: null,
+    firstName: 'Super',
+    lastName: 'Admin',
+    status: 'active',
+    isActive: true,
+  });
+
+  // Also seed the frontend demo super admin account
+  await getOrInsertUser({
+    email: 'superadmin@learningmatters.internal',
+    passwordHash: frontendAdminPasswordHash,
     role: 'super_admin',
     schoolId: null,
     firstName: 'Super',
@@ -296,6 +320,18 @@ export async function seedDatabase(): Promise<void> {
     role: 'admin',
     schoolId: abcSchool.id,
     firstName: 'System',
+    lastName: 'Admin',
+    status: 'active',
+    isActive: true,
+  });
+
+  // Frontend demo school admin
+  await getOrInsertUser({
+    email: 'admin@abcschool.internal',
+    passwordHash: frontendAdminPasswordHash,
+    role: 'admin',
+    schoolId: abcSchool.id,
+    firstName: 'School',
     lastName: 'Admin',
     status: 'active',
     isActive: true,
@@ -401,13 +437,23 @@ export async function seedDatabase(): Promise<void> {
       qualification: 'M.Sc. Physics, B.Ed.',
       joiningDate: new Date('2023-01-10T00:00:00.000Z'),
     },
+    {
+      employeeId: 'EMP-T04',
+      firstName: 'John',
+      lastName: 'Smith',
+      email: 'john.smith@abcschool.internal',
+      phone: '+91-9876500004',
+      qualification: 'B.Sc. Mathematics, B.Ed.',
+      joiningDate: new Date('2022-07-01T00:00:00.000Z'),
+      customPasswordHash: frontendTeacherPasswordHash,
+    },
   ];
 
   const teacherMap = new Map<string, typeof teachers.$inferSelect>();
   for (const t of teacherUsersData) {
     const tUser = await getOrInsertUser({
       email: t.email,
-      passwordHash,
+      passwordHash: t.customPasswordHash ?? passwordHash,
       role: 'teacher',
       schoolId: abcSchool.id,
       firstName: t.firstName,

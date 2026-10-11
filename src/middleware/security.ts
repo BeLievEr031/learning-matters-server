@@ -29,7 +29,7 @@ export const corsOptions: CorsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-school-id'],
   exposedHeaders: ['x-request-id'],
 };
 

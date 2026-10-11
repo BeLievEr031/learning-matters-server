@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import express, { type Express } from 'express';
 import { env } from './config/env.js';
 import { BODY_SIZE_LIMIT, API_V1 } from './config/constants.js';
@@ -63,6 +64,7 @@ export function createApp(): Express {
   // 6. Request body parsing with strict size limits
   app.use(express.json({ limit: BODY_SIZE_LIMIT }));
   app.use(express.urlencoded({ extended: false, limit: BODY_SIZE_LIMIT }));
+  app.use(cookieParser());
 
   // 7. Global rate limiting
   app.use(globalRateLimiter);
