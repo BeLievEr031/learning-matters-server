@@ -99,6 +99,13 @@
       "when": 1791138000000,
       "tag": "0013_add_composite_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791141000000,
+      "tag": "0014_add_chapters_table",
+      "breakpoints": true
     }
   ]
 }
