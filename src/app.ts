@@ -15,6 +15,7 @@ import { schoolsRouter } from './modules/schools/schools.routes.js';
 import { boardsRouter } from './modules/boards/boards.routes.js';
 import { gradesRouter } from './modules/grades/grades.routes.js';
 import { subjectsRouter } from './modules/subjects/subjects.routes.js';
+import { chaptersRouter } from './modules/chapters/chapters.routes.js';
 import { teachersRouter } from './modules/teachers/teachers.routes.js';
 import { studentsRouter } from './modules/students/students.routes.js';
 import { teacherAssignmentsRouter } from './modules/teacher-assignments/teacher-assignments.routes.js';
@@ -83,6 +84,7 @@ export function createApp(): Express {
   app.use(`${API_V1}/boards`, boardsRouter);
   app.use(`${API_V1}/grades`, gradesRouter);
   app.use(`${API_V1}/subjects`, subjectsRouter);
+  app.use(`${API_V1}/chapters`, chaptersRouter);
   app.use(`${API_V1}/teachers`, teachersRouter);
   app.use(`${API_V1}/students`, studentsRouter);
   app.use(`${API_V1}/teacher-assignments`, teacherAssignmentsRouter);

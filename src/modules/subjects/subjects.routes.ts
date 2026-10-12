@@ -45,14 +45,16 @@ gradeSubjectsRouter.delete(
 );
 
 import { subjectTeachersRouter } from '../teacher-assignments/teacher-assignments.routes.js';
+import { subjectChaptersRouter } from '../chapters/chapters.routes.js';
 
 /**
  * Router mounted at /api/v1/subjects
  */
 export const subjectsRouter: Router = Router();
 
-// Sub-resource router for subject teachers
+// Sub-resource routers
 subjectsRouter.use('/:subjectId/teachers', subjectTeachersRouter);
+subjectsRouter.use('/:subjectId/chapters', subjectChaptersRouter);
 
 // Get master subject by ID (super_admin, admin, principal, class_teacher, or teacher)
 subjectsRouter.get(
