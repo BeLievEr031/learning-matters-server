@@ -4,11 +4,11 @@ import { auditLogs, type AuditLog, type NewAuditLog } from '../../db/schema/audi
 import { DEFAULT_PAGE_SIZE } from '../../config/constants.js';
 
 export interface AuditLogFilters {
-  schoolId?: string;
-  actorId?: string;
-  resourceType?: string;
-  action?: string;
-  limit?: number;
+  schoolId?: string | undefined;
+  actorId?: string | undefined;
+  resourceType?: string | undefined;
+  action?: string | undefined;
+  limit?: number | undefined;
 }
 
 export class AuditLogsRepository {
