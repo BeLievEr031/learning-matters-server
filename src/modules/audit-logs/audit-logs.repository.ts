@@ -1,7 +1,15 @@
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { db, type Database } from '../../db/pool.js';
 import { auditLogs, type AuditLog, type NewAuditLog } from '../../db/schema/audit-logs.js';
 import { DEFAULT_PAGE_SIZE } from '../../config/constants.js';
+
+export interface AuditLogFilters {
+  schoolId?: string;
+  actorId?: string;
+  resourceType?: string;
+  action?: string;
+  limit?: number;
+}
 
 export class AuditLogsRepository {
   constructor(private readonly database: Database = db) {}
@@ -44,6 +52,25 @@ export class AuditLogsRepository {
       .from(auditLogs)
       .orderBy(desc(auditLogs.createdAt), desc(auditLogs.id))
       .limit(limit);
+  }
+
+  async listFiltered(filters: AuditLogFilters): Promise<AuditLog[]> {
+    const conditions = [];
+    if (filters.schoolId) conditions.push(eq(auditLogs.schoolId, filters.schoolId));
+    if (filters.actorId) conditions.push(eq(auditLogs.actorId, filters.actorId));
+    if (filters.resourceType) conditions.push(eq(auditLogs.resourceType, filters.resourceType));
+    if (filters.action) conditions.push(eq(auditLogs.action, filters.action));
+
+    if (conditions.length > 0) {
+      return this.database
+        .select()
+        .from(auditLogs)
+        .where(and(...conditions))
+        .orderBy(desc(auditLogs.createdAt), desc(auditLogs.id))
+        .limit(filters.limit ?? DEFAULT_PAGE_SIZE);
+    }
+
+    return this.list(filters.limit);
   }
 }
 
