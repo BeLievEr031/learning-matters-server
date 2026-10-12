@@ -1388,6 +1388,179 @@
           }
         }
       },
+      "Chapter": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "66666666-6666-4666-a666-666666666666"
+          },
+          "schoolId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "11111111-1111-4111-a111-111111111111"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "55555555-5555-4555-a555-555555555555"
+          },
+          "chapterNumber": {
+            "type": "integer",
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "example": "Introduction to Algebra"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Basic algebraic expressions and equations"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChapterStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T12:00:00.000Z"
+          },
+          "deletedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": null
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "subjectId",
+          "chapterNumber",
+          "title",
+          "description",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "deletedAt"
+        ]
+      },
+      "ChapterStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "inactive",
+          "archived"
+        ],
+        "example": "active"
+      },
+      "CreateChapterRequest": {
+        "type": "object",
+        "properties": {
+          "chapterNumber": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "example": "Introduction to Algebra"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "example": "Basic algebraic expressions and equations"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive",
+              "archived"
+            ],
+            "default": "active",
+            "example": "active"
+          }
+        },
+        "required": [
+          "chapterNumber",
+          "title"
+        ]
+      },
+      "ReorderChaptersRequest": {
+        "type": "object",
+        "properties": {
+          "chapters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "66666666-6666-4666-a666-666666666666"
+                },
+                "chapterNumber": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "example": 1
+                }
+              },
+              "required": [
+                "id",
+                "chapterNumber"
+              ]
+            },
+            "example": [
+              {
+                "id": "66666666-6666-4666-a666-666666666666",
+                "chapterNumber": 1
+              },
+              {
+                "id": "77777777-7777-4777-a777-777777777777",
+                "chapterNumber": 2
+              }
+            ]
+          }
+        },
+        "required": [
+          "chapters"
+        ]
+      },
+      "UpdateChapterRequest": {
+        "type": "object",
+        "properties": {
+          "chapterNumber": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 2
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "example": "Linear Equations"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000,
+            "example": "Solving single variable linear equations"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChapterStatus"
+          }
+        }
+      },
       "CreateTeacherRequest": {
         "type": "object",
         "properties": {
@@ -5483,6 +5656,628 @@
           },
           "409": {
             "description": "Cannot delete subject with active teacher assignments or active grade assignments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subjects/{subjectId}/chapters": {
+      "post": {
+        "tags": [
+          "Chapters"
+        ],
+        "summary": "Create chapter under a subject (Super Admin or School Admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "55555555-5555-4555-a555-555555555555"
+            },
+            "required": true,
+            "name": "subjectId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChapterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Chapter created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Chapter"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or inactive subject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin or own-school Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subject not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Chapter number already exists in this subject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Chapters"
+        ],
+        "summary": "List chapters for a subject (Super Admin, School Admin, Principal, Class Teacher, Teacher, Student)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "55555555-5555-4555-a555-555555555555"
+            },
+            "required": true,
+            "name": "subjectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "eyJjcmVhdGVkQXQiOiIyMDI2...}"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ChapterStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "algebra"
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "chapterNumber",
+                "title",
+                "createdAt",
+                "status"
+              ],
+              "default": "chapterNumber"
+            },
+            "required": false,
+            "name": "sortBy",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            },
+            "required": false,
+            "name": "sortOrder",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of chapters for the subject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Chapter"
+                      }
+                    },
+                    "pageInfo": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "pageInfo"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters or subject ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Access to another school is denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subject not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subjects/{subjectId}/chapters/reorder": {
+      "patch": {
+        "tags": [
+          "Chapters"
+        ],
+        "summary": "Batch reorder chapter positions within a subject (Super Admin or School Admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "55555555-5555-4555-a555-555555555555"
+            },
+            "required": true,
+            "name": "subjectId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderChaptersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chapters reordered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Chapter"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin or own-school Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subject or one or more chapters not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chapters/{chapterId}": {
+      "get": {
+        "tags": [
+          "Chapters"
+        ],
+        "summary": "Get chapter by ID (Super Admin, School Admin, Principal, Class Teacher, Teacher, Student)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "66666666-6666-4666-a666-666666666666"
+            },
+            "required": true,
+            "name": "chapterId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chapter details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Chapter"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid chapter ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Cross-school access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Chapter not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Chapters"
+        ],
+        "summary": "Update chapter (Super Admin or School Admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "66666666-6666-4666-a666-666666666666"
+            },
+            "required": true,
+            "name": "chapterId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChapterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chapter updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Chapter"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin or own-school Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Chapter not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Updated chapter number collides with existing chapter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Chapters"
+        ],
+        "summary": "Soft-delete chapter (Super Admin or School Admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "66666666-6666-4666-a666-666666666666"
+            },
+            "required": true,
+            "name": "chapterId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Chapter soft-deleted successfully"
+          },
+          "400": {
+            "description": "Invalid chapter ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: Super Admin or own-school Admin only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Chapter not found",
             "content": {
               "application/json": {
                 "schema": {

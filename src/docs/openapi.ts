@@ -379,6 +379,76 @@ export const UpdateSubjectRequestSchema = z
   .openapi('UpdateSubjectRequest');
 
 // ---------------------------------------------------------------------------
+// Chapter Schemas
+// ---------------------------------------------------------------------------
+export const ChapterStatusSchema = z
+  .enum(['active', 'inactive', 'archived'])
+  .openapi('ChapterStatus');
+
+export const ChapterSchema = z
+  .object({
+    id: z.uuid().openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+    schoolId: z.uuid().openapi({ example: '11111111-1111-4111-a111-111111111111' }),
+    subjectId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    chapterNumber: z.number().int().openapi({ example: 1 }),
+    title: z.string().openapi({ example: 'Introduction to Algebra' }),
+    description: z
+      .string()
+      .nullable()
+      .openapi({ example: 'Basic algebraic expressions and equations' }),
+    status: ChapterStatusSchema.openapi({ example: 'active' }),
+    createdAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    updatedAt: z.iso.datetime().openapi({ example: '2026-01-01T12:00:00.000Z' }),
+    deletedAt: z.iso.datetime().nullable().openapi({ example: null }),
+  })
+  .openapi('Chapter');
+
+export const CreateChapterRequestSchema = z
+  .object({
+    chapterNumber: z.number().int().min(1).openapi({ example: 1 }),
+    title: z.string().min(1).max(255).openapi({ example: 'Introduction to Algebra' }),
+    description: z
+      .string()
+      .max(2000)
+      .optional()
+      .openapi({ example: 'Basic algebraic expressions and equations' }),
+    status: ChapterStatusSchema.default('active').optional().openapi({ example: 'active' }),
+  })
+  .openapi('CreateChapterRequest');
+
+export const UpdateChapterRequestSchema = z
+  .object({
+    chapterNumber: z.number().int().min(1).optional().openapi({ example: 2 }),
+    title: z.string().min(1).max(255).optional().openapi({ example: 'Linear Equations' }),
+    description: z
+      .string()
+      .max(2000)
+      .nullable()
+      .optional()
+      .openapi({ example: 'Solving single variable linear equations' }),
+    status: ChapterStatusSchema.optional().openapi({ example: 'active' }),
+  })
+  .openapi('UpdateChapterRequest');
+
+export const ReorderChaptersRequestSchema = z
+  .object({
+    chapters: z
+      .array(
+        z.object({
+          id: z.uuid().openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+          chapterNumber: z.number().int().min(1).openapi({ example: 1 }),
+        }),
+      )
+      .openapi({
+        example: [
+          { id: '66666666-6666-4666-a666-666666666666', chapterNumber: 1 },
+          { id: '77777777-7777-4777-a777-777777777777', chapterNumber: 2 },
+        ],
+      }),
+  })
+  .openapi('ReorderChaptersRequest');
+
+// ---------------------------------------------------------------------------
 // Teacher Schemas
 // ---------------------------------------------------------------------------
 export const TeacherStatusSchema = z
@@ -2347,6 +2417,295 @@ registry.registerPath({
     409: {
       description:
         'Cannot delete subject with active teacher assignments or active grade assignments',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Chapter Endpoints
+// ---------------------------------------------------------------------------
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/subjects/{subjectId}/chapters',
+  tags: ['Chapters'],
+  summary: 'Create chapter under a subject (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      subjectId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: CreateChapterRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: 'Chapter created successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: ChapterSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error or inactive subject',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Subject not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Chapter number already exists in this subject',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/subjects/{subjectId}/chapters',
+  tags: ['Chapters'],
+  summary:
+    'List chapters for a subject (Super Admin, School Admin, Principal, Class Teacher, Teacher, Student)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      subjectId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    }),
+    query: z.object({
+      limit: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .default(20)
+        .optional()
+        .openapi({ example: 20 }),
+      cursor: z.string().optional().openapi({ example: 'eyJjcmVhdGVkQXQiOiIyMDI2...}' }),
+      status: ChapterStatusSchema.optional().openapi({ example: 'active' }),
+      search: z.string().optional().openapi({ example: 'algebra' }),
+      sortBy: z
+        .enum(['chapterNumber', 'title', 'createdAt', 'status'])
+        .default('chapterNumber')
+        .optional(),
+      sortOrder: z.enum(['asc', 'desc']).default('asc').optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Paginated list of chapters for the subject',
+      content: {
+        'application/json': {
+          schema: z.object({
+            success: z.boolean(),
+            data: z.array(ChapterSchema),
+            pageInfo: PageInfoSchema,
+            meta: PaginationMetaSchema.optional(),
+          }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid query parameters or subject ID',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Access to another school is denied',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Subject not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/subjects/{subjectId}/chapters/reorder',
+  tags: ['Chapters'],
+  summary: 'Batch reorder chapter positions within a subject (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      subjectId: z.uuid().openapi({ example: '55555555-5555-4555-a555-555555555555' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: ReorderChaptersRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Chapters reordered successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: z.array(ChapterSchema) }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Subject or one or more chapters not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/chapters/{chapterId}',
+  tags: ['Chapters'],
+  summary:
+    'Get chapter by ID (Super Admin, School Admin, Principal, Class Teacher, Teacher, Student)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      chapterId: z.uuid().openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Chapter details',
+      content: {
+        'application/json': {
+          schema: z.object({ data: ChapterSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid chapter ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Cross-school access denied',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Chapter not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/chapters/{chapterId}',
+  tags: ['Chapters'],
+  summary: 'Update chapter (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      chapterId: z.uuid().openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+    }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: UpdateChapterRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Chapter updated successfully',
+      content: {
+        'application/json': {
+          schema: z.object({ data: ChapterSchema }),
+        },
+      },
+    },
+    400: {
+      description: 'Validation error',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Chapter not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    409: {
+      description: 'Updated chapter number collides with existing chapter',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/chapters/{chapterId}',
+  tags: ['Chapters'],
+  summary: 'Soft-delete chapter (Super Admin or School Admin)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({
+      chapterId: z.uuid().openapi({ example: '66666666-6666-4666-a666-666666666666' }),
+    }),
+  },
+  responses: {
+    204: {
+      description: 'Chapter soft-deleted successfully',
+    },
+    400: {
+      description: 'Invalid chapter ID format',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: 'Forbidden: Super Admin or own-school Admin only',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: 'Chapter not found',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
   },
