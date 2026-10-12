@@ -56,7 +56,7 @@ All commits follow **Conventional Commits** (enforced by `commitlint.config.cjs`
 ```
 
 **Types:** `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `ci`
-**Scopes:** `auth`, `rbac`, `schools`, `boards`, `grades`, `students`, `subjects`, `teachers`, `assignments`, `db`, `middleware`, `docs`, `seed`, `config`
+**Scopes:** `auth`, `rbac`, `schools`, `boards`, `grades`, `students`, `subjects`, `chapters`, `teachers`, `assignments`, `db`, `middleware`, `docs`, `seed`, `config`
 
 ---
 
@@ -362,10 +362,10 @@ docs(grades): register grade schemas and routes in OpenAPI spec
 
 ---
 
-## Phase 4 — Subjects Module
+## Phase 4 — Subjects & Chapters Module
 
-> **Goal:** Subjects associated with grades, reusable within a school.
-> **Estimated effort:** 1 day
+> **Goal:** Subjects associated with grades, reusable within a school, along with structured curriculum chapters within each subject.
+> **Estimated effort:** 1.5 days
 
 ### 4.1 — Subject Schema & Migration
 
@@ -409,13 +409,68 @@ DELETE /api/v1/subjects/:subjectId             (soft delete master subject)
 
 ---
 
-### 4.3 — Subject Tests & Docs
+### 4.3 — Chapter Schema & Migration
+
+**What to do:**
+- Create `chapters` table linked to master subjects:
+  - `id`: uuid, PK, default random
+  - `school_id`: uuid (FK schools, cascade delete)
+  - `subject_id`: uuid (FK subjects, cascade delete)
+  - `chapter_number`: integer (order/index of chapter in subject)
+  - `title`: text, not null
+  - `description`: text, nullable
+  - `status`: enum `chapter_status` (`'active'`, `'inactive'`, `'archived'`), default `'active'`
+  - `created_at`, `updated_at`, `deleted_at`: timestamps with timezone
+- Unique constraint: `(subject_id, chapter_number)` where `deleted_at IS NULL`
+- Indexes: `(school_id, subject_id)`, `(subject_id, status)`, `(subject_id, chapter_number)`
 
 ```
-test(subjects): add integration tests for subject CRUD and grade associations
+feat(db): add chapters table for subject curriculum structuring
 
-docs(subjects): register subject schemas and routes in OpenAPI spec
+- chapters table linked to subject_id and school_id with cascade delete
+- chapter_number represents ordering within the subject
+- Unique constraint on (subject_id, chapter_number) prevents duplicate numbering
 ```
+
+---
+
+### 4.4 — Chapter Repository, Service, Controller & Routes
+
+**What to do:**
+- `POST   /api/v1/subjects/:subjectId/chapters` — create a chapter under a subject (super_admin | admin)
+- `GET    /api/v1/subjects/:subjectId/chapters` — list chapters for a subject (ordered by `chapter_number` asc, paginated, status filter)
+- `GET    /api/v1/chapters/:chapterId` — get single chapter details (scoped to school)
+- `PATCH  /api/v1/chapters/:chapterId` — update chapter title, number, description, status (super_admin | admin)
+- `DELETE /api/v1/chapters/:chapterId` — soft delete chapter (super_admin | admin)
+- `PATCH  /api/v1/subjects/:subjectId/chapters/reorder` — reorder chapters within a subject (super_admin | admin)
+
+**Business & Validation Rules:**
+- Subject must belong to the caller's school and must be active
+- `chapter_number` must be a positive integer and unique per subject among active chapters
+- Deleting a subject cascades or blocks if active chapters exist
+- Read access for `super_admin`, `admin`, `principal`, `class_teacher`, `teacher`, and `student`
+
+```
+feat(chapters): implement chapter management CRUD API for subjects
+
+POST   /api/v1/subjects/:subjectId/chapters           (create chapter)
+GET    /api/v1/subjects/:subjectId/chapters           (list chapters by subject)
+GET    /api/v1/chapters/:chapterId                    (get single chapter details)
+PATCH  /api/v1/chapters/:chapterId                    (update chapter)
+DELETE /api/v1/chapters/:chapterId                    (soft delete chapter)
+PATCH  /api/v1/subjects/:subjectId/chapters/reorder   (reorder chapter positions)
+```
+
+---
+
+### 4.5 — Subject & Chapter Tests & Docs
+
+```
+test(subjects): add integration tests for subject CRUD, grade associations, and chapters
+
+docs(subjects): register subject and chapter schemas and routes in OpenAPI spec
+```
+
 
 ---
 
