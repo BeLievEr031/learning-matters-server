@@ -10,3 +10,5 @@ export * from './teacher-assignments.js';
 export * from './principals.js';
 export * from './audit-logs.js';
 export * from './chapters.js';
+export * from './chapter-materials.js';
+export * from './chapter-notes.js';
