@@ -13,6 +13,7 @@ import {
   type TeacherAssignmentDetail,
 } from '../teacher-assignments/teacher-assignments.repository.js';
 import { usersRepository } from '../users/users.repository.js';
+import * as txModule from '../../db/transaction.js';
 import type { School } from '../../db/schema/schools.js';
 import type { Principal } from '../../db/schema/principals.js';
 import type { Teacher } from '../../db/schema/teachers.js';
@@ -324,9 +325,27 @@ describe('RBAC Fine-Grained Access Controls', () => {
 
     it('allows own-school principal to create a teacher (201)', async () => {
       const app = createApp();
+      vi.spyOn(txModule, 'withTransaction').mockImplementation(async (fn) =>
+        fn({} as unknown as txModule.Transaction),
+      );
       vi.spyOn(schoolsRepository, 'findById').mockResolvedValue(sampleSchool);
       vi.spyOn(teachersRepository, 'findBySchoolAndEmployeeId').mockResolvedValue(null);
       vi.spyOn(teachersRepository, 'findBySchoolAndEmail').mockResolvedValue(null);
+      vi.spyOn(usersRepository, 'findByEmail').mockResolvedValue(null);
+      vi.spyOn(usersRepository, 'create').mockResolvedValue({
+        id: 'user-new',
+        email: 'edna@springfield.edu',
+        role: 'teacher',
+        schoolId: school1Id,
+        firstName: 'Edna',
+        lastName: 'Krabappel',
+        phone: null,
+        status: 'active',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      });
       vi.spyOn(teachersRepository, 'create').mockResolvedValue(sampleTeacher1);
 
       const res = await request(app)
