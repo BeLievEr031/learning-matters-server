@@ -70,10 +70,17 @@ subjectChaptersRouter.delete(
   chaptersController.deleteChapter,
 );
 
+import { chapterMaterialsRouter } from './materials/materials.routes.js';
+import { chapterNotesRouter } from './notes/notes.routes.js';
+
 /**
  * Router mounted at /api/v1/chapters
  */
 export const chaptersRouter: Router = Router();
+
+// Sub-resources for chapter materials and notes
+chaptersRouter.use('/:chapterId/materials', chapterMaterialsRouter);
+chaptersRouter.use('/:chapterId/notes', chapterNotesRouter);
 
 // Get chapter by ID (super_admin, admin, principal, class_teacher, teacher, student)
 chaptersRouter.get(
