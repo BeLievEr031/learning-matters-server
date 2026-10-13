@@ -54,8 +54,18 @@ export const schoolIdParamSchema = z.object({
   schoolId: z.uuid('Invalid school ID format'),
 });
 
+export const gradeIdParamSchema = z.object({
+  gradeId: z.uuid('Invalid grade ID format'),
+});
+
+export const subjectIdParamSchema = z.object({
+  subjectId: z.uuid('Invalid subject ID format'),
+});
+
 export type CreateTeacherInput = z.infer<typeof createTeacherSchema>;
 export type UpdateTeacherInput = z.infer<typeof updateTeacherSchema>;
 export type ListTeachersQuery = z.infer<typeof listTeachersQuerySchema>;
 export type TeacherIdParam = z.infer<typeof teacherIdParamSchema>;
 export type SchoolIdParam = z.infer<typeof schoolIdParamSchema>;
+export type GradeIdParam = z.infer<typeof gradeIdParamSchema>;
+export type SubjectIdParam = z.infer<typeof subjectIdParamSchema>;

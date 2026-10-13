@@ -1,6 +1,9 @@
+import argon2 from 'argon2';
 import { teachersRepository, type TeachersRepository } from './teachers.repository.js';
 import { schoolsRepository, type SchoolsRepository } from '../schools/schools.repository.js';
 import { usersRepository, type UsersRepository } from '../users/users.repository.js';
+import { gradesRepository, type GradesRepository } from '../grades/grades.repository.js';
+import { subjectsRepository, type SubjectsRepository } from '../subjects/subjects.repository.js';
 import {
   teacherAssignmentsRepository,
   type TeacherAssignmentsRepository,
@@ -13,7 +16,14 @@ import type {
 } from './teachers.schemas.js';
 import type { UserRole } from '../../db/schema/users.js';
 import { NotFoundError, ConflictError, ForbiddenError } from '../../lib/app-error.js';
-import { DEFAULT_PAGE_SIZE } from '../../config/constants.js';
+import {
+  DEFAULT_PAGE_SIZE,
+  ARGON2_MEMORY_COST,
+  ARGON2_TIME_COST,
+  ARGON2_PARALLELISM,
+  DEFAULT_TEACHER_PASSWORD,
+} from '../../config/constants.js';
+import { withTransaction, type Transaction } from '../../db/transaction.js';
 import {
   decodeCursor,
   buildPaginatedResponse,
@@ -26,6 +36,11 @@ export class TeachersService {
     private readonly schoolsRepo: SchoolsRepository = schoolsRepository,
     private readonly usersRepo: UsersRepository = usersRepository,
     private readonly teacherAssignmentsRepo: TeacherAssignmentsRepository = teacherAssignmentsRepository,
+    private readonly gradesRepo: GradesRepository = gradesRepository,
+    private readonly subjectsRepo: SubjectsRepository = subjectsRepository,
+    private readonly txRunner: <T>(
+      fn: (tx: Transaction) => Promise<T>,
+    ) => Promise<T> = withTransaction,
   ) {}
 
   /**
@@ -80,19 +95,62 @@ export class TeachersService {
       if (user.schoolId && user.schoolId !== schoolId) {
         throw new ForbiddenError('Linked user account belongs to a different school');
       }
+
+      return this.repo.create({
+        schoolId,
+        employeeId: normalizedEmployeeId,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        email: normalizedEmail,
+        phone: input.phone,
+        userId: input.userId,
+        joiningDate: input.joiningDate,
+        qualification: input.qualification,
+        status: input.status,
+      });
     }
 
-    return this.repo.create({
-      schoolId,
-      employeeId: normalizedEmployeeId,
-      firstName: input.firstName,
-      lastName: input.lastName,
-      email: normalizedEmail,
-      phone: input.phone,
-      userId: input.userId,
-      joiningDate: input.joiningDate,
-      qualification: input.qualification,
-      status: input.status,
+    // Auto-create User account with dummy password if userId was not provided
+    const existingUser = await this.usersRepo.findByEmail(normalizedEmail);
+    if (existingUser) {
+      throw new ConflictError('A user account with this email already exists');
+    }
+
+    const passwordHash = await argon2.hash(DEFAULT_TEACHER_PASSWORD, {
+      memoryCost: ARGON2_MEMORY_COST,
+      timeCost: ARGON2_TIME_COST,
+      parallelism: ARGON2_PARALLELISM,
+    });
+
+    return this.txRunner(async (tx) => {
+      const createdUser = await this.usersRepo.create(
+        {
+          email: normalizedEmail,
+          passwordHash,
+          role: 'teacher',
+          schoolId,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          phone: input.phone ?? null,
+        },
+        tx,
+      );
+
+      return this.repo.create(
+        {
+          schoolId,
+          employeeId: normalizedEmployeeId,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: normalizedEmail,
+          phone: input.phone,
+          userId: createdUser.id,
+          joiningDate: input.joiningDate,
+          qualification: input.qualification,
+          status: input.status,
+        },
+        tx,
+      );
     });
   }
 
@@ -239,6 +297,118 @@ export class TeachersService {
     }
 
     await this.repo.softDelete(teacherId);
+  }
+
+  /**
+   * Helper to resolve teacher record by linked user ID.
+   */
+  async resolveTeacherFromUserId(userId: string): Promise<Teacher> {
+    const teacher = await this.repo.findByUserId(userId);
+    if (!teacher) {
+      throw new NotFoundError('Teacher profile not found for this user account');
+    }
+    return teacher;
+  }
+
+  /**
+   * Feature 2: Get assigned grades for logged-in teacher.
+   */
+  async getMyAssignedGrades(callerUserId: string, callerSchoolId?: string | null) {
+    const teacher = await this.resolveTeacherFromUserId(callerUserId);
+    return this.repo.findAssignedGradesByTeacherId(teacher.id, callerSchoolId ?? teacher.schoolId);
+  }
+
+  /**
+   * Feature 2: Get assigned grades by teacher ID with role verification.
+   */
+  async getTeacherAssignedGrades(
+    teacherId: string,
+    callerSchoolId?: string | null,
+    callerRole?: UserRole,
+    callerUserId?: string,
+  ) {
+    const teacher = await this.repo.findById(teacherId);
+    if (!teacher) {
+      throw new NotFoundError('Teacher not found');
+    }
+
+    if (callerRole === 'super_admin') {
+      return this.repo.findAssignedGradesByTeacherId(teacher.id, teacher.schoolId);
+    }
+
+    if (callerRole === 'teacher' || callerRole === 'class_teacher') {
+      if (!callerUserId || teacher.userId !== callerUserId) {
+        throw new ForbiddenError('Forbidden: Teachers can only view their own assigned grades');
+      }
+      return this.repo.findAssignedGradesByTeacherId(teacher.id, teacher.schoolId);
+    }
+
+    if (callerSchoolId && teacher.schoolId !== callerSchoolId) {
+      throw new ForbiddenError('Forbidden: Cannot access teachers from other schools');
+    }
+
+    return this.repo.findAssignedGradesByTeacherId(teacher.id, teacher.schoolId);
+  }
+
+  /**
+   * Feature 3: Get assigned subjects in a grade for logged-in teacher.
+   */
+  async getMyAssignedGradeSubjects(callerUserId: string, gradeId: string) {
+    const teacher = await this.resolveTeacherFromUserId(callerUserId);
+    const grade = await this.gradesRepo.findById(gradeId);
+    if (!grade) {
+      throw new NotFoundError('Grade not found');
+    }
+
+    const hasAssignment = await this.repo.hasTeacherGradeAssignment(teacher.id, gradeId);
+    const isClassTeacher = grade.classTeacherId === teacher.id;
+
+    if (!hasAssignment && !isClassTeacher) {
+      throw new ForbiddenError('Forbidden: You are not assigned to this grade');
+    }
+
+    const subjects = await this.repo.findAssignedSubjectsByTeacherAndGrade(teacher.id, gradeId);
+    return {
+      grade: {
+        id: grade.id,
+        name: grade.name,
+      },
+      subjects,
+    };
+  }
+
+  /**
+   * Feature 3: Get all assigned subjects across grades for logged-in teacher.
+   */
+  async getMyAllAssignedSubjects(callerUserId: string) {
+    const teacher = await this.resolveTeacherFromUserId(callerUserId);
+    return this.repo.findAllAssignedSubjectsByTeacher(teacher.id);
+  }
+
+  /**
+   * Feature 4: Get assigned subject chapters for logged-in teacher.
+   */
+  async getMyAssignedSubjectChapters(callerUserId: string, subjectId: string) {
+    const teacher = await this.resolveTeacherFromUserId(callerUserId);
+    const subject = await this.subjectsRepo.findById(subjectId);
+    if (!subject) {
+      throw new NotFoundError('Subject not found');
+    }
+
+    const hasAssignment = await this.repo.hasTeacherSubjectAssignment(teacher.id, subjectId);
+    if (!hasAssignment) {
+      throw new ForbiddenError('Forbidden: You are not assigned to this subject');
+    }
+
+    const chapters = await this.repo.findChaptersBySubject(subjectId);
+    return {
+      subject: {
+        id: subject.id,
+        name: subject.name,
+        code: subject.code,
+      },
+      chapters,
+    };
   }
 }
 

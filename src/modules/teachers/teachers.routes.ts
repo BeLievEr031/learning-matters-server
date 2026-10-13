@@ -9,6 +9,8 @@ import {
   listTeachersQuerySchema,
   teacherIdParamSchema,
   schoolIdParamSchema,
+  gradeIdParamSchema,
+  subjectIdParamSchema,
 } from './teachers.schemas.js';
 
 /**
@@ -43,6 +45,46 @@ export const teachersRouter: Router = Router();
 
 // Sub-resource router for teacher assignments
 teachersRouter.use('/:teacherId/assignments', teacherAssignmentsByTeacherRouter);
+
+// Teacher context routes (must precede /:teacherId)
+teachersRouter.get(
+  '/me/grades',
+  authenticate,
+  authorize('teacher', 'class_teacher'),
+  teachersController.getMyAssignedGrades,
+);
+
+teachersRouter.get(
+  '/me/subjects',
+  authenticate,
+  authorize('teacher', 'class_teacher'),
+  teachersController.getMyAllAssignedSubjects,
+);
+
+teachersRouter.get(
+  '/me/grades/:gradeId/subjects',
+  authenticate,
+  authorize('teacher', 'class_teacher'),
+  validate({ params: gradeIdParamSchema }),
+  teachersController.getMyAssignedGradeSubjects,
+);
+
+teachersRouter.get(
+  '/me/subjects/:subjectId/chapters',
+  authenticate,
+  authorize('teacher', 'class_teacher'),
+  validate({ params: subjectIdParamSchema }),
+  teachersController.getMyAssignedSubjectChapters,
+);
+
+// Get assigned grades for specific teacher
+teachersRouter.get(
+  '/:teacherId/grades',
+  authenticate,
+  authorize('super_admin', 'admin', 'principal', 'class_teacher', 'teacher'),
+  validate({ params: teacherIdParamSchema }),
+  teachersController.getTeacherAssignedGrades,
+);
 
 // Get teacher by ID (super_admin, same-school staff, or teacher themselves)
 teachersRouter.get(

@@ -25,3 +25,9 @@ export const MAX_REVOKED_TOKENS_PER_FAMILY = 5;
 
 /** API version prefix. */
 export const API_V1 = '/api/v1';
+
+/** Default initial password for automatically provisioned teacher user accounts. */
+export const DEFAULT_TEACHER_PASSWORD = process.env.DEFAULT_TEACHER_PASSWORD ?? 'Teacher@123';
+
+/** Maximum upload file size in bytes (25MB). */
+export const MAX_UPLOAD_FILE_SIZE_BYTES = 25 * 1024 * 1024;

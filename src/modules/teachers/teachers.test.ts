@@ -5,7 +5,9 @@ import { createApp } from '../../app.js';
 import { env } from '../../config/env.js';
 import { teachersRepository } from './teachers.repository.js';
 import { schoolsRepository } from '../schools/schools.repository.js';
+import { usersRepository } from '../users/users.repository.js';
 import { teacherAssignmentsRepository } from '../teacher-assignments/teacher-assignments.repository.js';
+import * as txModule from '../../db/transaction.js';
 import type { Teacher } from '../../db/schema/teachers.js';
 import type { School } from '../../db/schema/schools.js';
 
@@ -90,6 +92,24 @@ describe('Teachers Module API', () => {
     vi.spyOn(teacherAssignmentsRepository, 'hasActiveAssignmentsByTeacher').mockResolvedValue(
       false,
     );
+    vi.spyOn(txModule, 'withTransaction').mockImplementation(async (fn) =>
+      fn({} as unknown as txModule.Transaction),
+    );
+    vi.spyOn(usersRepository, 'findByEmail').mockResolvedValue(null);
+    vi.spyOn(usersRepository, 'create').mockResolvedValue({
+      id: teacherUserId,
+      email: 'edna@springfield.edu',
+      role: 'teacher',
+      schoolId: school1Id,
+      firstName: 'Edna',
+      lastName: 'Krabappel',
+      phone: null,
+      status: 'active',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    });
   });
 
   describe('POST /api/v1/schools/:schoolId/teachers', () => {
@@ -359,6 +379,110 @@ describe('Teachers Module API', () => {
       const res = await request(app)
         .delete(`/api/v1/teachers/${sampleTeacher.id}`)
         .set('Authorization', `Bearer ${ownSchoolTeacherToken}`);
+
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe('GET /api/v1/teachers/me/grades', () => {
+    it('returns assigned grades for authenticated teacher (200)', async () => {
+      const app = createApp();
+      vi.spyOn(teachersRepository, 'findByUserId').mockResolvedValue(sampleTeacher);
+      const mockGrades = [
+        {
+          id: '11111111-2222-3333-4444-555555555555',
+          name: 'Grade 10 - Section A',
+          code: 'G10-A',
+          gradeNumber: 10,
+          section: 'A',
+          boardId: 'board-1',
+          boardName: 'CBSE',
+          isClassTeacher: true,
+          totalAssignedSubjects: 2,
+        },
+      ];
+      vi.spyOn(teachersRepository, 'findAssignedGradesByTeacherId').mockResolvedValue(mockGrades);
+
+      const res = await request(app)
+        .get('/api/v1/teachers/me/grades')
+        .set('Authorization', `Bearer ${ownTeacherSelfToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual(mockGrades);
+    });
+
+    it('returns 403 for student attempting to access /me/grades', async () => {
+      const app = createApp();
+
+      const res = await request(app)
+        .get('/api/v1/teachers/me/grades')
+        .set('Authorization', `Bearer ${studentToken}`);
+
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe('GET /api/v1/teachers/me/subjects', () => {
+    it('returns all assigned subjects for authenticated teacher (200)', async () => {
+      const app = createApp();
+      vi.spyOn(teachersRepository, 'findByUserId').mockResolvedValue(sampleTeacher);
+      const mockSubjects = [
+        {
+          id: 'sub-1',
+          name: 'Mathematics',
+          code: 'MATH101',
+          description: 'Math',
+          status: 'active',
+          totalChapters: 5,
+        },
+      ];
+      vi.spyOn(teachersRepository, 'findAllAssignedSubjectsByTeacher').mockResolvedValue(
+        mockSubjects,
+      );
+
+      const res = await request(app)
+        .get('/api/v1/teachers/me/subjects')
+        .set('Authorization', `Bearer ${ownTeacherSelfToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual(mockSubjects);
+    });
+  });
+
+  describe('GET /api/v1/teachers/:teacherId/grades', () => {
+    it('returns assigned grades for teacher when queried by admin (200)', async () => {
+      const app = createApp();
+      vi.spyOn(teachersRepository, 'findById').mockResolvedValue(sampleTeacher);
+      const mockGrades = [
+        {
+          id: '11111111-2222-3333-4444-555555555555',
+          name: 'Grade 10 - Section A',
+          code: 'G10-A',
+          gradeNumber: 10,
+          section: 'A',
+          boardId: 'board-1',
+          boardName: 'CBSE',
+          isClassTeacher: false,
+          totalAssignedSubjects: 1,
+        },
+      ];
+      vi.spyOn(teachersRepository, 'findAssignedGradesByTeacherId').mockResolvedValue(mockGrades);
+
+      const res = await request(app)
+        .get(`/api/v1/teachers/${sampleTeacher.id}/grades`)
+        .set('Authorization', `Bearer ${ownSchoolAdminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual(mockGrades);
+    });
+
+    it('returns 403 when teacher tries to query another teacher grades', async () => {
+      const app = createApp();
+      vi.spyOn(teachersRepository, 'findById').mockResolvedValue(sampleTeacher);
+
+      const res = await request(app)
+        .get(`/api/v1/teachers/${sampleTeacher.id}/grades`)
+        .set('Authorization', `Bearer ${otherSchoolTeacherToken}`);
 
       expect(res.status).toBe(403);
     });

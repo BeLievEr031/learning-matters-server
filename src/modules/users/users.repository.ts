@@ -1,5 +1,6 @@
 import { eq, isNull, and, or, lt, desc } from 'drizzle-orm';
 import { db } from '../../db/pool.js';
+import type { Transaction } from '../../db/transaction.js';
 import { users, type User, type UserRole } from '../../db/schema/users.js';
 import type { CursorPayload } from '../../lib/pagination.js';
 
@@ -84,16 +85,20 @@ export class UsersRepository {
   /**
    * Create a new user and return the safe representation (without passwordHash).
    */
-  async create(data: {
-    email: string;
-    passwordHash: string;
-    role?: UserRole;
-    schoolId?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
-    phone?: string | null;
-  }): Promise<UserSafe> {
-    const rows = await db
+  async create(
+    data: {
+      email: string;
+      passwordHash: string;
+      role?: UserRole;
+      schoolId?: string | null;
+      firstName?: string | null;
+      lastName?: string | null;
+      phone?: string | null;
+    },
+    tx?: Transaction,
+  ): Promise<UserSafe> {
+    const executor = tx ?? db;
+    const rows = await executor
       .insert(users)
       .values({
         email: data.email.toLowerCase(),
