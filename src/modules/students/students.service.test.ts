@@ -3,9 +3,11 @@ import { StudentsService } from './students.service.js';
 import { StudentsRepository } from './students.repository.js';
 import { GradesRepository } from '../grades/grades.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
+import { TeachersRepository } from '../teachers/teachers.repository.js';
 import type { Student } from '../../db/schema/students.js';
 import type { Grade } from '../../db/schema/grades.js';
 import type { User } from '../../db/schema/users.js';
+import type { Teacher } from '../../db/schema/teachers.js';
 import {
   ConflictError,
   NotFoundError,
@@ -18,6 +20,7 @@ describe('StudentsService', () => {
   let mockStudentsRepo: StudentsRepository;
   let mockGradesRepo: GradesRepository;
   let mockUsersRepo: UsersRepository;
+  let mockTeachersRepo: TeachersRepository;
 
   const school1Id = '11111111-1111-4111-a111-111111111111';
   const school2Id = '22222222-2222-4222-a222-222222222222';
@@ -93,11 +96,34 @@ describe('StudentsService', () => {
     deletedAt: null,
   };
 
+  const mockTeacher: Teacher = {
+    id: '77777777-7777-4777-a777-777777777777',
+    schoolId: school1Id,
+    userId,
+    employeeId: 'EMP-001',
+    firstName: 'Edna',
+    lastName: 'Krabappel',
+    email: 'edna@simpson.edu',
+    phone: null,
+    joiningDate: null,
+    qualification: null,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+  };
+
   beforeEach(() => {
     mockStudentsRepo = new StudentsRepository();
     mockGradesRepo = new GradesRepository();
     mockUsersRepo = new UsersRepository();
-    service = new StudentsService(mockStudentsRepo, mockGradesRepo, mockUsersRepo);
+    mockTeachersRepo = new TeachersRepository();
+    service = new StudentsService(
+      mockStudentsRepo,
+      mockGradesRepo,
+      mockUsersRepo,
+      mockTeachersRepo,
+    );
   });
 
   describe('createStudent', () => {
@@ -287,6 +313,33 @@ describe('StudentsService', () => {
 
       await expect(
         service.listStudentsByGrade(mockOtherSchoolGrade.id, {}, school1Id, 'admin'),
+      ).rejects.toThrow(ForbiddenError);
+    });
+
+    it('allows teacher assigned to grade to list students', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockActiveGrade);
+      vi.spyOn(mockTeachersRepo, 'findByUserId').mockResolvedValue(mockTeacher);
+      vi.spyOn(mockTeachersRepo, 'hasTeacherGradeAssignment').mockResolvedValue(true);
+      vi.spyOn(mockStudentsRepo, 'listByGrade').mockResolvedValue([mockStudent]);
+
+      const result = await service.listStudentsByGrade(
+        grade1Id,
+        { limit: 10 },
+        school1Id,
+        'teacher',
+        userId,
+      );
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('throws ForbiddenError if teacher is not assigned to grade', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockActiveGrade);
+      vi.spyOn(mockTeachersRepo, 'findByUserId').mockResolvedValue(mockTeacher);
+      vi.spyOn(mockTeachersRepo, 'hasTeacherGradeAssignment').mockResolvedValue(false);
+
+      await expect(
+        service.listStudentsByGrade(grade1Id, {}, school1Id, 'teacher', userId),
       ).rejects.toThrow(ForbiddenError);
     });
   });

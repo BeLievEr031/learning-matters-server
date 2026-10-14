@@ -1,4 +1,4 @@
-import { eq, isNull, and, or, lt, desc, asc, ilike, sql } from 'drizzle-orm';
+import { eq, isNull, and, or, lt, desc, asc, ilike, inArray, sql } from 'drizzle-orm';
 import { db } from '../../db/pool.js';
 import {
   students,
@@ -286,6 +286,77 @@ export class StudentsRepository {
       .limit(1);
 
     return rows.length > 0;
+  }
+
+  /**
+   * List students across multiple grades with keyset cursor pagination and optional filtering.
+   */
+  async listByGradeIds(
+    gradeIds: string[],
+    limit: number,
+    cursor?: CursorPayload,
+    filters?: StudentFilters,
+  ): Promise<Student[]> {
+    if (gradeIds.length === 0) {
+      return [];
+    }
+    const conditions = [inArray(students.gradeId, gradeIds), isNull(students.deletedAt)];
+
+    if (filters?.status) {
+      conditions.push(eq(students.status, filters.status));
+    }
+
+    if (filters?.gender) {
+      conditions.push(eq(students.gender, filters.gender));
+    }
+
+    if (filters?.search) {
+      const searchPattern = `%${filters.search.trim()}%`;
+      const searchCondition = or(
+        ilike(students.firstName, searchPattern),
+        ilike(students.lastName, searchPattern),
+        ilike(students.admissionNumber, searchPattern),
+        ilike(students.email, searchPattern),
+      );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
+    }
+
+    if (cursor) {
+      const cursorCondition = or(
+        lt(students.createdAt, cursor.createdAt),
+        and(eq(students.createdAt, cursor.createdAt), lt(students.id, cursor.id)),
+      );
+      if (cursorCondition) {
+        conditions.push(cursorCondition);
+      }
+    }
+
+    let primaryOrder = desc(students.createdAt);
+    if (filters?.sortBy === 'firstName') {
+      primaryOrder =
+        filters.sortOrder === 'asc' ? asc(students.firstName) : desc(students.firstName);
+    } else if (filters?.sortBy === 'lastName') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(students.lastName) : desc(students.lastName);
+    } else if (filters?.sortBy === 'admissionNumber') {
+      primaryOrder =
+        filters.sortOrder === 'asc'
+          ? asc(students.admissionNumber)
+          : desc(students.admissionNumber);
+    } else if (filters?.sortBy === 'status') {
+      primaryOrder = filters.sortOrder === 'asc' ? asc(students.status) : desc(students.status);
+    } else if (filters?.sortBy === 'createdAt') {
+      primaryOrder =
+        filters.sortOrder === 'asc' ? asc(students.createdAt) : desc(students.createdAt);
+    }
+
+    return db
+      .select()
+      .from(students)
+      .where(and(...conditions))
+      .orderBy(primaryOrder, desc(students.id))
+      .limit(limit + 1);
   }
 }
 

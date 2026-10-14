@@ -280,12 +280,29 @@ describe('Students Module API', () => {
       const gradeWithOtherTeacher = { ...sampleGrade, classTeacherId: 'teacher-other' };
       vi.spyOn(gradesRepository, 'findById').mockResolvedValue(gradeWithOtherTeacher);
       vi.spyOn(teachersRepository, 'findByUserId').mockResolvedValue(sampleTeacher);
+      vi.spyOn(teachersRepository, 'hasTeacherGradeAssignment').mockResolvedValue(false);
 
       const res = await request(app)
         .get(`/api/v1/grades/${grade1Id}/students`)
         .set('Authorization', `Bearer ${ownSchoolClassTeacherToken}`);
 
       expect(res.status).toBe(403);
+    });
+
+    it('returns paginated students for grade (200) to assigned teacher', async () => {
+      const app = createApp();
+      const gradeWithOtherTeacher = { ...sampleGrade, classTeacherId: 'teacher-other' };
+      vi.spyOn(gradesRepository, 'findById').mockResolvedValue(gradeWithOtherTeacher);
+      vi.spyOn(teachersRepository, 'findByUserId').mockResolvedValue(sampleTeacher);
+      vi.spyOn(teachersRepository, 'hasTeacherGradeAssignment').mockResolvedValue(true);
+      vi.spyOn(studentsRepository, 'listByGrade').mockResolvedValue([sampleStudent]);
+
+      const res = await request(app)
+        .get(`/api/v1/grades/${grade1Id}/students`)
+        .set('Authorization', `Bearer ${ownSchoolTeacherToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(1);
     });
 
     it('allows principal to list students (200)', async () => {

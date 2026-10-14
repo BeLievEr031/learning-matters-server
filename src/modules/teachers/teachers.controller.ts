@@ -156,6 +156,39 @@ export class TeachersController {
       next(err);
     }
   };
+
+  getMyAssignedGradeStudents = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Authentication required');
+      }
+      const gradeId = req.params.gradeId as string;
+      const result = await this.service.getMyAssignedGradeStudents(req.user.id, gradeId, req.query);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getMyAllAssignedStudents = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Authentication required');
+      }
+      const result = await this.service.getMyAllAssignedStudents(req.user.id, req.query);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  };
 }
 
 export const teachersController = new TeachersController();

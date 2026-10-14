@@ -26,11 +26,11 @@ gradeStudentsRouter.post(
   studentsController.createStudent,
 );
 
-// List students in grade (super_admin, own-school admin, principal, or class_teacher)
+// List students in grade (super_admin, own-school admin, principal, class_teacher, or teacher)
 gradeStudentsRouter.get(
   '/',
   authenticate,
-  authorize('super_admin', 'admin', 'principal', 'class_teacher'),
+  authorize('super_admin', 'admin', 'principal', 'class_teacher', 'teacher'),
   validate({ params: gradeIdParamSchema, query: listStudentsQuerySchema }),
   studentsController.listStudentsByGrade,
 );

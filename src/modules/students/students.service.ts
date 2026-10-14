@@ -115,14 +115,21 @@ export class StudentsService {
   ): Promise<PaginatedResult<Student>> {
     const grade = await this.getAndVerifyGradeAccess(gradeId, callerSchoolId, callerRole);
 
-    if (callerRole === 'class_teacher') {
+    if (callerRole === 'teacher' || callerRole === 'class_teacher') {
       if (!callerUserId) {
         throw new ForbiddenError('Forbidden: Insufficient permissions');
       }
       const teacherProfile = await this.teachersRepo.findByUserId(callerUserId);
-      if (grade.classTeacherId !== teacherProfile?.id) {
+      if (!teacherProfile) {
+        throw new ForbiddenError('Forbidden: Teacher profile not found');
+      }
+      const isClassTeacher = grade.classTeacherId === teacherProfile.id;
+      const hasAssignment =
+        isClassTeacher ||
+        (await this.teachersRepo.hasTeacherGradeAssignment(teacherProfile.id, gradeId));
+      if (!hasAssignment) {
         throw new ForbiddenError(
-          'Forbidden: Class teachers can only view students in their assigned grade',
+          'Forbidden: Teachers can only view students in their assigned grade',
         );
       }
     }

@@ -9,12 +9,14 @@ import { SchoolsRepository } from '../schools/schools.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { GradesRepository } from '../grades/grades.repository.js';
 import { SubjectsRepository } from '../subjects/subjects.repository.js';
+import { StudentsRepository } from '../students/students.repository.js';
 import { TeacherAssignmentsRepository } from '../teacher-assignments/teacher-assignments.repository.js';
 import type { Teacher } from '../../db/schema/teachers.js';
 import type { School } from '../../db/schema/schools.js';
 import type { User } from '../../db/schema/users.js';
 import type { Grade } from '../../db/schema/grades.js';
 import type { Subject } from '../../db/schema/subjects.js';
+import type { Student } from '../../db/schema/students.js';
 import { ConflictError, NotFoundError, ForbiddenError } from '../../lib/app-error.js';
 
 describe('TeachersService', () => {
@@ -79,8 +81,48 @@ describe('TeachersService', () => {
     deletedAt: null,
   };
 
+  const mockGrade: Grade = {
+    id: 'grade-1',
+    schoolId: school1Id,
+    boardId: 'board-1',
+    name: 'Grade 10 - Section A',
+    code: 'G10-A',
+    gradeNumber: 10,
+    section: 'A',
+    capacity: 30,
+    classTeacherId: mockTeacher.id,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+  };
+
   let mockGradesRepo: GradesRepository;
   let mockSubjectsRepo: SubjectsRepository;
+  let mockStudentsRepo: StudentsRepository;
+
+  const mockStudent: Student = {
+    id: 'student-1',
+    schoolId: school1Id,
+    boardId: 'board-1',
+    gradeId: 'grade-1',
+    userId: null,
+    admissionNumber: 'ADM-001',
+    firstName: 'Bart',
+    lastName: 'Simpson',
+    dateOfBirth: null,
+    gender: 'male',
+    email: 'bart@simpson.edu',
+    phone: null,
+    guardianName: 'Homer Simpson',
+    guardianPhone: null,
+    guardianEmail: null,
+    address: null,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+  };
 
   beforeEach(() => {
     mockTeachersRepo = new TeachersRepository();
@@ -89,8 +131,9 @@ describe('TeachersService', () => {
     mockTeacherAssignmentsRepo = new TeacherAssignmentsRepository();
     mockGradesRepo = new GradesRepository();
     mockSubjectsRepo = new SubjectsRepository();
-    const mockTxRunner = async <T>(fn: (tx: unknown) => Promise<T>): Promise<T> => {
-      return await fn({});
+    mockStudentsRepo = new StudentsRepository();
+    const mockTxRunner = async <T>(fn: (tx: any) => Promise<T>): Promise<T> => {
+      return await fn({} as any);
     };
     service = new TeachersService(
       mockTeachersRepo,
@@ -100,6 +143,7 @@ describe('TeachersService', () => {
       mockGradesRepo,
       mockSubjectsRepo,
       mockTxRunner,
+      mockStudentsRepo,
     );
     vi.spyOn(mockTeacherAssignmentsRepo, 'hasActiveAssignmentsByTeacher').mockResolvedValue(false);
   });
@@ -549,7 +593,17 @@ describe('TeachersService', () => {
     it('allows super_admin to retrieve assigned grades for any teacher', async () => {
       vi.spyOn(mockTeachersRepo, 'findById').mockResolvedValue(mockTeacher);
       const mockGrades: AssignedGradeResult[] = [
-        { id: 'grade-1', name: 'Grade 10', code: 'G10', gradeNumber: 10, totalSubjects: 2 },
+        {
+          id: 'grade-1',
+          name: 'Grade 10',
+          code: 'G10',
+          gradeNumber: 10,
+          section: 'A',
+          boardId: 'board-1',
+          boardName: 'CBSE',
+          isClassTeacher: false,
+          totalAssignedSubjects: 2,
+        },
       ];
       vi.spyOn(mockTeachersRepo, 'findAssignedGradesByTeacherId').mockResolvedValue(mockGrades);
 
@@ -561,7 +615,17 @@ describe('TeachersService', () => {
     it('allows teacher to retrieve their own assigned grades', async () => {
       vi.spyOn(mockTeachersRepo, 'findById').mockResolvedValue(mockTeacher);
       const mockGrades: AssignedGradeResult[] = [
-        { id: 'grade-1', name: 'Grade 10', code: 'G10', gradeNumber: 10, totalSubjects: 2 },
+        {
+          id: 'grade-1',
+          name: 'Grade 10',
+          code: 'G10',
+          gradeNumber: 10,
+          section: 'A',
+          boardId: 'board-1',
+          boardName: 'CBSE',
+          isClassTeacher: false,
+          totalAssignedSubjects: 2,
+        },
       ];
       vi.spyOn(mockTeachersRepo, 'findAssignedGradesByTeacherId').mockResolvedValue(mockGrades);
 
@@ -725,6 +789,70 @@ describe('TeachersService', () => {
       await expect(service.getMyAssignedSubjectChapters(userId1, mockSubject.id)).rejects.toThrow(
         ForbiddenError,
       );
+    });
+  });
+
+  describe('getMyAssignedGradeStudents', () => {
+    it('returns students for an assigned grade', async () => {
+      vi.spyOn(mockTeachersRepo, 'findByUserId').mockResolvedValue(mockTeacher);
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockGrade);
+      vi.spyOn(mockTeachersRepo, 'hasTeacherGradeAssignment').mockResolvedValue(true);
+      vi.spyOn(mockStudentsRepo, 'listByGrade').mockResolvedValue([mockStudent]);
+
+      const result = await service.getMyAssignedGradeStudents(userId1, mockGrade.id, {
+        limit: 10,
+      });
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]?.id).toBe(mockStudent.id);
+    });
+
+    it('throws ForbiddenError if teacher is not assigned to grade and not class teacher', async () => {
+      vi.spyOn(mockTeachersRepo, 'findByUserId').mockResolvedValue(mockTeacher);
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue({
+        ...mockGrade,
+        classTeacherId: null,
+      });
+      vi.spyOn(mockTeachersRepo, 'hasTeacherGradeAssignment').mockResolvedValue(false);
+
+      await expect(service.getMyAssignedGradeStudents(userId1, mockGrade.id)).rejects.toThrow(
+        ForbiddenError,
+      );
+    });
+  });
+
+  describe('getMyAllAssignedStudents', () => {
+    it('returns students across all assigned grades', async () => {
+      vi.spyOn(mockTeachersRepo, 'findByUserId').mockResolvedValue(mockTeacher);
+      vi.spyOn(mockTeachersRepo, 'findAssignedGradesByTeacherId').mockResolvedValue([
+        {
+          id: 'grade-1',
+          name: 'Grade 10',
+          code: 'G10',
+          gradeNumber: 10,
+          section: 'A',
+          boardId: 'board-1',
+          boardName: 'CBSE',
+          isClassTeacher: false,
+          totalAssignedSubjects: 1,
+        },
+      ]);
+      vi.spyOn(mockStudentsRepo, 'listByGradeIds').mockResolvedValue([mockStudent]);
+
+      const result = await service.getMyAllAssignedStudents(userId1, { limit: 10 });
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]?.id).toBe(mockStudent.id);
+    });
+
+    it('returns empty list if teacher has no assigned grades', async () => {
+      vi.spyOn(mockTeachersRepo, 'findByUserId').mockResolvedValue(mockTeacher);
+      vi.spyOn(mockTeachersRepo, 'findAssignedGradesByTeacherId').mockResolvedValue([]);
+
+      const result = await service.getMyAllAssignedStudents(userId1, { limit: 10 });
+
+      expect(result.data).toHaveLength(0);
+      expect(result.pageInfo.hasMore).toBe(false);
     });
   });
 });

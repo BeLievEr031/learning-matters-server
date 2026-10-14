@@ -12,6 +12,7 @@ import {
   gradeIdParamSchema,
   subjectIdParamSchema,
 } from './teachers.schemas.js';
+import { listStudentsQuerySchema } from '../students/students.schemas.js';
 
 /**
  * Sub-resource router mounted at /api/v1/schools/:schoolId/teachers
@@ -75,6 +76,22 @@ teachersRouter.get(
   authorize('teacher', 'class_teacher'),
   validate({ params: subjectIdParamSchema }),
   teachersController.getMyAssignedSubjectChapters,
+);
+
+teachersRouter.get(
+  '/me/students',
+  authenticate,
+  authorize('teacher', 'class_teacher'),
+  validate({ query: listStudentsQuerySchema }),
+  teachersController.getMyAllAssignedStudents,
+);
+
+teachersRouter.get(
+  '/me/grades/:gradeId/students',
+  authenticate,
+  authorize('teacher', 'class_teacher'),
+  validate({ params: gradeIdParamSchema, query: listStudentsQuerySchema }),
+  teachersController.getMyAssignedGradeStudents,
 );
 
 // Get assigned grades for specific teacher

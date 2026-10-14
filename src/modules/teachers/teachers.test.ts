@@ -6,10 +6,14 @@ import { env } from '../../config/env.js';
 import { teachersRepository } from './teachers.repository.js';
 import { schoolsRepository } from '../schools/schools.repository.js';
 import { usersRepository } from '../users/users.repository.js';
+import { gradesRepository } from '../grades/grades.repository.js';
+import { studentsRepository } from '../students/students.repository.js';
 import { teacherAssignmentsRepository } from '../teacher-assignments/teacher-assignments.repository.js';
 import * as txModule from '../../db/transaction.js';
 import type { Teacher } from '../../db/schema/teachers.js';
 import type { School } from '../../db/schema/schools.js';
+import type { Grade } from '../../db/schema/grades.js';
+import type { Student } from '../../db/schema/students.js';
 
 describe('Teachers Module API', () => {
   const school1Id = '11111111-1111-4111-a111-111111111111';
@@ -485,6 +489,140 @@ describe('Teachers Module API', () => {
         .set('Authorization', `Bearer ${otherSchoolTeacherToken}`);
 
       expect(res.status).toBe(403);
+    });
+  });
+
+  describe('GET /api/v1/teachers/me/grades/:gradeId/students', () => {
+    const gradeId = '33333333-3333-4333-a333-333333333333';
+    const sampleGrade: Grade = {
+      id: gradeId,
+      schoolId: school1Id,
+      boardId: 'board-1',
+      name: 'Grade 10 - Section A',
+      code: 'G10-A',
+      gradeNumber: 10,
+      section: 'A',
+      capacity: 30,
+      classTeacherId: null,
+      status: 'active',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    };
+
+    const sampleStudent: Student = {
+      id: 'student-1',
+      schoolId: school1Id,
+      boardId: 'board-1',
+      gradeId,
+      userId: null,
+      admissionNumber: 'ADM-001',
+      firstName: 'Bart',
+      lastName: 'Simpson',
+      dateOfBirth: null,
+      gender: 'male',
+      email: 'bart@simpson.edu',
+      phone: null,
+      guardianName: null,
+      guardianPhone: null,
+      guardianEmail: null,
+      address: null,
+      status: 'active',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    };
+
+    it('returns paginated students when teacher is assigned to that grade (200)', async () => {
+      const app = createApp();
+      vi.spyOn(teachersRepository, 'findByUserId').mockResolvedValue(sampleTeacher);
+      vi.spyOn(gradesRepository, 'findById').mockResolvedValue(sampleGrade);
+      vi.spyOn(teachersRepository, 'hasTeacherGradeAssignment').mockResolvedValue(true);
+      vi.spyOn(studentsRepository, 'listByGrade').mockResolvedValue([sampleStudent]);
+
+      const res = await request(app)
+        .get(`/api/v1/teachers/me/grades/${gradeId}/students`)
+        .set('Authorization', `Bearer ${ownTeacherSelfToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.data[0].id).toBe(sampleStudent.id);
+    });
+
+    it('rejects with 403 when teacher is not assigned to that grade', async () => {
+      const app = createApp();
+      vi.spyOn(teachersRepository, 'findByUserId').mockResolvedValue(sampleTeacher);
+      vi.spyOn(gradesRepository, 'findById').mockResolvedValue(sampleGrade);
+      vi.spyOn(teachersRepository, 'hasTeacherGradeAssignment').mockResolvedValue(false);
+
+      const res = await request(app)
+        .get(`/api/v1/teachers/me/grades/${gradeId}/students`)
+        .set('Authorization', `Bearer ${ownTeacherSelfToken}`);
+
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe('GET /api/v1/teachers/me/students', () => {
+    it('returns all students across assigned grades (200)', async () => {
+      const app = createApp();
+      vi.spyOn(teachersRepository, 'findByUserId').mockResolvedValue(sampleTeacher);
+      vi.spyOn(teachersRepository, 'findAssignedGradesByTeacherId').mockResolvedValue([
+        {
+          id: 'grade-1',
+          name: 'Grade 10',
+          code: 'G10',
+          gradeNumber: 10,
+          section: 'A',
+          boardId: 'board-1',
+          boardName: 'CBSE',
+          isClassTeacher: false,
+          totalAssignedSubjects: 1,
+        },
+      ]);
+      const sampleStudent: Student = {
+        id: 'student-1',
+        schoolId: school1Id,
+        boardId: 'board-1',
+        gradeId: 'grade-1',
+        userId: null,
+        admissionNumber: 'ADM-001',
+        firstName: 'Bart',
+        lastName: 'Simpson',
+        dateOfBirth: null,
+        gender: 'male',
+        email: 'bart@simpson.edu',
+        phone: null,
+        guardianName: null,
+        guardianPhone: null,
+        guardianEmail: null,
+        address: null,
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
+      vi.spyOn(studentsRepository, 'listByGradeIds').mockResolvedValue([sampleStudent]);
+
+      const res = await request(app)
+        .get('/api/v1/teachers/me/students')
+        .set('Authorization', `Bearer ${ownTeacherSelfToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(1);
+    });
+
+    it('returns empty list when teacher has no assigned grades (200)', async () => {
+      const app = createApp();
+      vi.spyOn(teachersRepository, 'findByUserId').mockResolvedValue(sampleTeacher);
+      vi.spyOn(teachersRepository, 'findAssignedGradesByTeacherId').mockResolvedValue([]);
+
+      const res = await request(app)
+        .get('/api/v1/teachers/me/students')
+        .set('Authorization', `Bearer ${ownTeacherSelfToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(0);
     });
   });
 });

@@ -4,16 +4,19 @@ import { schoolsRepository, type SchoolsRepository } from '../schools/schools.re
 import { usersRepository, type UsersRepository } from '../users/users.repository.js';
 import { gradesRepository, type GradesRepository } from '../grades/grades.repository.js';
 import { subjectsRepository, type SubjectsRepository } from '../subjects/subjects.repository.js';
+import { studentsRepository, type StudentsRepository } from '../students/students.repository.js';
 import {
   teacherAssignmentsRepository,
   type TeacherAssignmentsRepository,
 } from '../teacher-assignments/teacher-assignments.repository.js';
 import type { Teacher } from '../../db/schema/teachers.js';
+import type { Student } from '../../db/schema/students.js';
 import type {
   CreateTeacherInput,
   UpdateTeacherInput,
   ListTeachersQuery,
 } from './teachers.schemas.js';
+import type { ListStudentsQuery } from '../students/students.schemas.js';
 import type { UserRole } from '../../db/schema/users.js';
 import { NotFoundError, ConflictError, ForbiddenError } from '../../lib/app-error.js';
 import {
@@ -41,6 +44,7 @@ export class TeachersService {
     private readonly txRunner: <T>(
       fn: (tx: Transaction) => Promise<T>,
     ) => Promise<T> = withTransaction,
+    private readonly studentsRepo: StudentsRepository = studentsRepository,
   ) {}
 
   /**
@@ -409,6 +413,81 @@ export class TeachersService {
       },
       chapters,
     };
+  }
+
+  /**
+   * Get students for an assigned grade for logged-in teacher.
+   */
+  async getMyAssignedGradeStudents(
+    callerUserId: string,
+    gradeId: string,
+    query: Partial<ListStudentsQuery> = {},
+  ): Promise<PaginatedResult<Student>> {
+    const teacher = await this.resolveTeacherFromUserId(callerUserId);
+    const grade = await this.gradesRepo.findById(gradeId);
+    if (!grade) {
+      throw new NotFoundError('Grade not found');
+    }
+
+    const isClassTeacher = grade.classTeacherId === teacher.id;
+    const hasAssignment =
+      isClassTeacher || (await this.repo.hasTeacherGradeAssignment(teacher.id, gradeId));
+
+    if (!hasAssignment) {
+      throw new ForbiddenError('Forbidden: You are not assigned to this grade');
+    }
+
+    const limit = query.limit ?? DEFAULT_PAGE_SIZE;
+    const cursor = query.cursor ? (decodeCursor(query.cursor) ?? undefined) : undefined;
+    const rawItems = await this.studentsRepo.listByGrade(gradeId, limit, cursor, {
+      status: query.status,
+      gender: query.gender,
+      search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
+
+    return buildPaginatedResponse(rawItems, limit, (item) => ({
+      createdAt: item.createdAt,
+      id: item.id,
+    }));
+  }
+
+  /**
+   * Get all students across all assigned grades for logged-in teacher.
+   */
+  async getMyAllAssignedStudents(
+    callerUserId: string,
+    query: Partial<ListStudentsQuery> = {},
+  ): Promise<PaginatedResult<Student>> {
+    const teacher = await this.resolveTeacherFromUserId(callerUserId);
+    const assignedGrades = await this.repo.findAssignedGradesByTeacherId(
+      teacher.id,
+      teacher.schoolId,
+    );
+    const gradeIds = Array.from(new Set(assignedGrades.map((g) => g.id)));
+
+    const limit = query.limit ?? DEFAULT_PAGE_SIZE;
+    if (gradeIds.length === 0) {
+      return buildPaginatedResponse([] as Student[], limit, (item) => ({
+        createdAt: item.createdAt,
+        id: item.id,
+      }));
+    }
+
+    const cursor = query.cursor ? (decodeCursor(query.cursor) ?? undefined) : undefined;
+    const rawItems = await this.studentsRepo.listByGradeIds(gradeIds, limit, cursor, {
+      status: query.status,
+      gender: query.gender,
+      search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
+
+    return buildPaginatedResponse(rawItems, limit, (item) => ({
+      createdAt: item.createdAt,
+      id: item.id,
+    }));
   }
 }
 
