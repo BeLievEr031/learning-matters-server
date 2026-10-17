@@ -5,9 +5,22 @@ import type {
   UpdateStudentInput,
   TransferStudentInput,
 } from './students.schemas.js';
+import { UnauthorizedError } from '../../lib/app-error.js';
 
 export class StudentsController {
   constructor(private readonly service: StudentsService = studentsService) {}
+
+  getMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Authentication required');
+      }
+      const profile = await this.service.getMyProfile(req.user.id);
+      res.status(200).json({ data: profile });
+    } catch (err) {
+      next(err);
+    }
+  };
 
   createStudent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

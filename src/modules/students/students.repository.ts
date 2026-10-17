@@ -1,13 +1,47 @@
 import { eq, isNull, and, or, lt, desc, asc, ilike, inArray, sql } from 'drizzle-orm';
 import { db } from '../../db/pool.js';
+import type { Transaction } from '../../db/transaction.js';
 import {
   students,
   type Student,
   type StudentStatus,
   type StudentGender,
 } from '../../db/schema/students.js';
+import { schools } from '../../db/schema/schools.js';
+import { boards } from '../../db/schema/boards.js';
+import { grades } from '../../db/schema/grades.js';
 import type { CursorPayload } from '../../lib/pagination.js';
 import type { STUDENT_SORT_FIELDS } from './students.schemas.js';
+
+export interface StudentProfileResult {
+  id: string;
+  userId: string | null;
+  schoolId: string;
+  schoolName: string;
+  schoolCode: string;
+  boardId: string;
+  boardName: string;
+  boardCode: string;
+  gradeId: string;
+  gradeName: string;
+  gradeCode: string;
+  gradeNumber: number;
+  section: string | null;
+  admissionNumber: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: Date | null;
+  gender: StudentGender | null;
+  email: string | null;
+  phone: string | null;
+  guardianName: string | null;
+  guardianPhone: string | null;
+  guardianEmail: string | null;
+  address: string | null;
+  status: StudentStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface StudentFilters {
   status?: StudentStatus | undefined;
@@ -97,10 +131,73 @@ export class StudentsRepository {
   }
 
   /**
+   * Find a student by user ID.
+   */
+  async findByUserId(userId: string, includeDeleted = false): Promise<Student | null> {
+    const conditions = [eq(students.userId, userId)];
+    if (!includeDeleted) {
+      conditions.push(isNull(students.deletedAt));
+    }
+
+    const rows = await db
+      .select()
+      .from(students)
+      .where(and(...conditions))
+      .limit(1);
+
+    return rows[0] ?? null;
+  }
+
+  /**
+   * Find student profile with school, board, and grade metadata by user ID.
+   */
+  async findProfileByUserId(userId: string): Promise<StudentProfileResult | null> {
+    const rows = await db
+      .select({
+        id: students.id,
+        userId: students.userId,
+        schoolId: students.schoolId,
+        schoolName: schools.name,
+        schoolCode: schools.code,
+        boardId: students.boardId,
+        boardName: boards.name,
+        boardCode: boards.code,
+        gradeId: students.gradeId,
+        gradeName: grades.name,
+        gradeCode: grades.code,
+        gradeNumber: grades.gradeNumber,
+        section: grades.section,
+        admissionNumber: students.admissionNumber,
+        firstName: students.firstName,
+        lastName: students.lastName,
+        dateOfBirth: students.dateOfBirth,
+        gender: students.gender,
+        email: students.email,
+        phone: students.phone,
+        guardianName: students.guardianName,
+        guardianPhone: students.guardianPhone,
+        guardianEmail: students.guardianEmail,
+        address: students.address,
+        status: students.status,
+        createdAt: students.createdAt,
+        updatedAt: students.updatedAt,
+      })
+      .from(students)
+      .innerJoin(schools, eq(students.schoolId, schools.id))
+      .innerJoin(boards, eq(students.boardId, boards.id))
+      .innerJoin(grades, eq(students.gradeId, grades.id))
+      .where(and(eq(students.userId, userId), isNull(students.deletedAt)))
+      .limit(1);
+
+    return rows[0] ?? null;
+  }
+
+  /**
    * Create a new student record.
    */
-  async create(data: CreateStudentData): Promise<Student> {
-    const rows = await db
+  async create(data: CreateStudentData, tx?: Transaction): Promise<Student> {
+    const executor = tx ?? db;
+    const rows = await executor
       .insert(students)
       .values({
         schoolId: data.schoolId,

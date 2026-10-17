@@ -29,5 +29,8 @@ export const API_V1 = '/api/v1';
 /** Default initial password for automatically provisioned teacher user accounts. */
 export const DEFAULT_TEACHER_PASSWORD = process.env.DEFAULT_TEACHER_PASSWORD ?? 'Teacher@123';
 
+/** Default initial password for automatically provisioned student user accounts. */
+export const DEFAULT_STUDENT_PASSWORD = process.env.DEFAULT_STUDENT_PASSWORD ?? 'Student@123';
+
 /** Maximum upload file size in bytes (25MB). */
 export const MAX_UPLOAD_FILE_SIZE_BYTES = 25 * 1024 * 1024;

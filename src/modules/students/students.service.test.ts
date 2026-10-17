@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { StudentsService } from './students.service.js';
-import { StudentsRepository } from './students.repository.js';
+import { StudentsRepository, type StudentProfileResult } from './students.repository.js';
 import { GradesRepository } from '../grades/grades.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { TeachersRepository } from '../teachers/teachers.repository.js';
@@ -118,11 +118,15 @@ describe('StudentsService', () => {
     mockGradesRepo = new GradesRepository();
     mockUsersRepo = new UsersRepository();
     mockTeachersRepo = new TeachersRepository();
+    const mockTxRunner = async <T>(fn: (tx: any) => Promise<T>): Promise<T> => {
+      return await fn({} as any);
+    };
     service = new StudentsService(
       mockStudentsRepo,
       mockGradesRepo,
       mockUsersRepo,
       mockTeachersRepo,
+      mockTxRunner,
     );
   });
 
@@ -153,6 +157,82 @@ describe('StudentsService', () => {
           admissionNumber: 'ADM-2026-001',
         }),
       );
+    });
+
+    it('auto-creates user account when email is provided without userId', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockActiveGrade);
+      vi.spyOn(mockStudentsRepo, 'findBySchoolAndAdmissionNumber').mockResolvedValue(null);
+      vi.spyOn(mockUsersRepo, 'findByEmail').mockResolvedValue(null);
+      const userCreateSpy = vi.spyOn(mockUsersRepo, 'create').mockResolvedValue({
+        id: 'new-user-id',
+        email: 'bart@simpson.edu',
+        role: 'student',
+        schoolId: school1Id,
+        firstName: 'Bart',
+        lastName: 'Simpson',
+        phone: null,
+        status: 'active',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      });
+      const studentCreateSpy = vi.spyOn(mockStudentsRepo, 'create').mockResolvedValue({
+        ...mockStudent,
+        userId: 'new-user-id',
+        email: 'bart@simpson.edu',
+      });
+
+      const result = await service.createStudent(
+        grade1Id,
+        {
+          admissionNumber: 'ADM-2026-001',
+          firstName: 'Bart',
+          lastName: 'Simpson',
+          email: 'bart@simpson.edu',
+          status: 'active',
+        },
+        school1Id,
+        'admin',
+      );
+
+      expect(userCreateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: 'bart@simpson.edu',
+          role: 'student',
+          schoolId: school1Id,
+        }),
+        expect.anything(),
+      );
+      expect(studentCreateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'new-user-id',
+          email: 'bart@simpson.edu',
+        }),
+        expect.anything(),
+      );
+      expect(result.userId).toBe('new-user-id');
+    });
+
+    it('throws ConflictError if email already exists in users during auto-provisioning', async () => {
+      vi.spyOn(mockGradesRepo, 'findById').mockResolvedValue(mockActiveGrade);
+      vi.spyOn(mockStudentsRepo, 'findBySchoolAndAdmissionNumber').mockResolvedValue(null);
+      vi.spyOn(mockUsersRepo, 'findByEmail').mockResolvedValue(mockUser);
+
+      await expect(
+        service.createStudent(
+          grade1Id,
+          {
+            admissionNumber: 'ADM-2026-001',
+            firstName: 'Bart',
+            lastName: 'Simpson',
+            email: 'existing@simpson.edu',
+            status: 'active',
+          },
+          school1Id,
+          'admin',
+        ),
+      ).rejects.toThrow(ConflictError);
     });
 
     it('rejects creation under an inactive grade', async () => {
@@ -516,6 +596,61 @@ describe('StudentsService', () => {
       await expect(service.deleteStudent('non-existent', school1Id, 'admin')).rejects.toThrow(
         NotFoundError,
       );
+    });
+  });
+
+  describe('getMyProfile', () => {
+    const mockStudentProfile: StudentProfileResult = {
+      id: mockStudent.id,
+      userId: userId,
+      schoolId: school1Id,
+      schoolName: 'Springfield Elementary',
+      schoolCode: 'SPFLD',
+      boardId: boardId,
+      boardName: 'State Board',
+      boardCode: 'SB',
+      gradeId: grade1Id,
+      gradeName: 'Grade 10 - Section A',
+      gradeCode: 'G10-A',
+      gradeNumber: 10,
+      section: 'A',
+      admissionNumber: 'ADM-2026-001',
+      firstName: 'Bart',
+      lastName: 'Simpson',
+      dateOfBirth: new Date('2012-04-01T00:00:00Z'),
+      gender: 'male',
+      email: 'bart@simpson.edu',
+      phone: null,
+      guardianName: 'Homer Simpson',
+      guardianPhone: null,
+      guardianEmail: null,
+      address: null,
+      status: 'active',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    it('returns student profile successfully for active student', async () => {
+      vi.spyOn(mockStudentsRepo, 'findProfileByUserId').mockResolvedValue(mockStudentProfile);
+
+      const result = await service.getMyProfile(userId);
+      expect(result).toEqual(mockStudentProfile);
+      expect(result.gradeName).toBe('Grade 10 - Section A');
+    });
+
+    it('throws NotFoundError if student profile is not found', async () => {
+      vi.spyOn(mockStudentsRepo, 'findProfileByUserId').mockResolvedValue(null);
+
+      await expect(service.getMyProfile('non-existent-user')).rejects.toThrow(NotFoundError);
+    });
+
+    it('throws ForbiddenError if student account is not active', async () => {
+      vi.spyOn(mockStudentsRepo, 'findProfileByUserId').mockResolvedValue({
+        ...mockStudentProfile,
+        status: 'suspended',
+      });
+
+      await expect(service.getMyProfile(userId)).rejects.toThrow(ForbiddenError);
     });
   });
 });

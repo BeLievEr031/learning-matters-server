@@ -1,4 +1,9 @@
-import { studentsRepository, type StudentsRepository } from './students.repository.js';
+import argon2 from 'argon2';
+import {
+  studentsRepository,
+  type StudentsRepository,
+  type StudentProfileResult,
+} from './students.repository.js';
 import { gradesRepository, type GradesRepository } from '../grades/grades.repository.js';
 import { usersRepository, type UsersRepository } from '../users/users.repository.js';
 import { teachersRepository, type TeachersRepository } from '../teachers/teachers.repository.js';
@@ -16,7 +21,14 @@ import {
   ForbiddenError,
   BadRequestError,
 } from '../../lib/app-error.js';
-import { DEFAULT_PAGE_SIZE } from '../../config/constants.js';
+import {
+  DEFAULT_PAGE_SIZE,
+  ARGON2_MEMORY_COST,
+  ARGON2_TIME_COST,
+  ARGON2_PARALLELISM,
+  DEFAULT_STUDENT_PASSWORD,
+} from '../../config/constants.js';
+import { withTransaction, type Transaction } from '../../db/transaction.js';
 import {
   decodeCursor,
   buildPaginatedResponse,
@@ -29,6 +41,9 @@ export class StudentsService {
     private readonly gradesRepo: GradesRepository = gradesRepository,
     private readonly usersRepo: UsersRepository = usersRepository,
     private readonly teachersRepo: TeachersRepository = teachersRepository,
+    private readonly txRunner: <T>(
+      fn: (tx: Transaction) => Promise<T>,
+    ) => Promise<T> = withTransaction,
   ) {}
 
   /**
@@ -81,6 +96,77 @@ export class StudentsService {
       if (user.schoolId && user.schoolId !== grade.schoolId) {
         throw new ForbiddenError('Linked user account belongs to a different school');
       }
+
+      return this.repo.create({
+        schoolId: grade.schoolId,
+        boardId: grade.boardId,
+        gradeId: grade.id,
+        admissionNumber: normalizedAdmissionNumber,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        dateOfBirth: input.dateOfBirth,
+        gender: input.gender,
+        email: input.email,
+        phone: input.phone,
+        guardianName: input.guardianName,
+        guardianPhone: input.guardianPhone,
+        guardianEmail: input.guardianEmail,
+        address: input.address,
+        userId: input.userId,
+        status: input.status,
+      });
+    }
+
+    // Auto-create User account with dummy password if userId was not provided and email exists
+    if (input.email) {
+      const normalizedEmail = input.email.trim().toLowerCase();
+      const existingUser = await this.usersRepo.findByEmail(normalizedEmail);
+      if (existingUser) {
+        throw new ConflictError('A user account with this email already exists');
+      }
+
+      const passwordHash = await argon2.hash(DEFAULT_STUDENT_PASSWORD, {
+        memoryCost: ARGON2_MEMORY_COST,
+        timeCost: ARGON2_TIME_COST,
+        parallelism: ARGON2_PARALLELISM,
+      });
+
+      return this.txRunner(async (tx) => {
+        const createdUser = await this.usersRepo.create(
+          {
+            email: normalizedEmail,
+            passwordHash,
+            role: 'student',
+            schoolId: grade.schoolId,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            phone: input.phone ?? null,
+          },
+          tx,
+        );
+
+        return this.repo.create(
+          {
+            schoolId: grade.schoolId,
+            boardId: grade.boardId,
+            gradeId: grade.id,
+            admissionNumber: normalizedAdmissionNumber,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            dateOfBirth: input.dateOfBirth,
+            gender: input.gender,
+            email: normalizedEmail,
+            phone: input.phone,
+            guardianName: input.guardianName,
+            guardianPhone: input.guardianPhone,
+            guardianEmail: input.guardianEmail,
+            address: input.address,
+            userId: createdUser.id,
+            status: input.status,
+          },
+          tx,
+        );
+      });
     }
 
     return this.repo.create({
@@ -98,9 +184,25 @@ export class StudentsService {
       guardianPhone: input.guardianPhone,
       guardianEmail: input.guardianEmail,
       address: input.address,
-      userId: input.userId,
+      userId: null,
       status: input.status,
     });
+  }
+
+  /**
+   * Get the authenticated student's profile by user ID.
+   */
+  async getMyProfile(callerUserId: string): Promise<StudentProfileResult> {
+    const profile = await this.repo.findProfileByUserId(callerUserId);
+    if (!profile) {
+      throw new NotFoundError('Student profile not found');
+    }
+
+    if (profile.status !== 'active') {
+      throw new ForbiddenError('Student account is not active');
+    }
+
+    return profile;
   }
 
   /**

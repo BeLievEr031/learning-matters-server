@@ -287,4 +287,105 @@ describe('StudentsRepository', () => {
       expect(result).toBe(false);
     });
   });
+
+  describe('findByUserId', () => {
+    it('returns student by userId when found', async () => {
+      vi.spyOn(db, 'select').mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([mockStudent]),
+          }),
+        }),
+      } as never);
+
+      const result = await studentsRepository.findByUserId('66666666-6666-4666-a666-666666666666');
+      expect(result).toEqual(mockStudent);
+    });
+
+    it('returns null when student not found by userId', async () => {
+      vi.spyOn(db, 'select').mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      } as never);
+
+      const result = await studentsRepository.findByUserId('non-existent-user');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findProfileByUserId', () => {
+    const mockProfileResult = {
+      id: mockStudent.id,
+      userId: mockStudent.userId,
+      schoolId: mockStudent.schoolId,
+      schoolName: 'Springfield Elementary',
+      schoolCode: 'SPFLD',
+      boardId: mockStudent.boardId,
+      boardName: 'State Board',
+      boardCode: 'SB',
+      gradeId: mockStudent.gradeId,
+      gradeName: 'Grade 10 - Section A',
+      gradeCode: 'G10-A',
+      gradeNumber: 10,
+      section: 'A',
+      admissionNumber: mockStudent.admissionNumber,
+      firstName: mockStudent.firstName,
+      lastName: mockStudent.lastName,
+      dateOfBirth: mockStudent.dateOfBirth,
+      gender: mockStudent.gender,
+      email: mockStudent.email,
+      phone: mockStudent.phone,
+      guardianName: mockStudent.guardianName,
+      guardianPhone: mockStudent.guardianPhone,
+      guardianEmail: mockStudent.guardianEmail,
+      address: mockStudent.address,
+      status: mockStudent.status,
+      createdAt: mockStudent.createdAt,
+      updatedAt: mockStudent.updatedAt,
+    };
+
+    it('returns student profile by userId when found', async () => {
+      vi.spyOn(db, 'select').mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            innerJoin: vi.fn().mockReturnValue({
+              innerJoin: vi.fn().mockReturnValue({
+                where: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue([mockProfileResult]),
+                }),
+              }),
+            }),
+          }),
+        }),
+      } as never);
+
+      const result = await studentsRepository.findProfileByUserId(
+        '66666666-6666-4666-a666-666666666666',
+      );
+      expect(result).toEqual(mockProfileResult);
+      expect(result?.gradeName).toBe('Grade 10 - Section A');
+    });
+
+    it('returns null when profile not found by userId', async () => {
+      vi.spyOn(db, 'select').mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            innerJoin: vi.fn().mockReturnValue({
+              innerJoin: vi.fn().mockReturnValue({
+                where: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue([]),
+                }),
+              }),
+            }),
+          }),
+        }),
+      } as never);
+
+      const result = await studentsRepository.findProfileByUserId('non-existent-user');
+      expect(result).toBeNull();
+    });
+  });
 });

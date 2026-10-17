@@ -3,7 +3,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { createApp } from '../../app.js';
 import { env } from '../../config/env.js';
-import { studentsRepository } from './students.repository.js';
+import { studentsRepository, type StudentProfileResult } from './students.repository.js';
 import { gradesRepository } from '../grades/grades.repository.js';
 import { usersRepository } from '../users/users.repository.js';
 import { teachersRepository } from '../teachers/teachers.repository.js';
@@ -461,6 +461,67 @@ describe('Students Module API', () => {
       const res = await request(app)
         .delete(`/api/v1/students/${studentId}`)
         .set('Authorization', `Bearer ${otherSchoolAdminToken}`);
+
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe('GET /api/v1/students/me', () => {
+    const sampleProfile: StudentProfileResult = {
+      id: studentId,
+      userId: studentUserId,
+      schoolId: school1Id,
+      schoolName: 'Greenwood High',
+      schoolCode: 'GWH',
+      boardId: boardId,
+      boardName: 'CBSE',
+      boardCode: 'CBSE',
+      gradeId: grade1Id,
+      gradeName: 'Grade 10 - Section A',
+      gradeCode: 'G10-A',
+      gradeNumber: 10,
+      section: 'A',
+      admissionNumber: 'ADM-2026-001',
+      firstName: 'Bart',
+      lastName: 'Simpson',
+      dateOfBirth: new Date('2012-04-01T00:00:00Z'),
+      gender: 'male',
+      email: 'bart@simpson.edu',
+      phone: null,
+      guardianName: 'Homer Simpson',
+      guardianPhone: null,
+      guardianEmail: null,
+      address: null,
+      status: 'active',
+      createdAt: new Date('2026-01-01T12:00:00Z'),
+      updatedAt: new Date('2026-01-01T12:00:00Z'),
+    };
+
+    it('returns student profile (200) for authenticated student', async () => {
+      const app = createApp();
+      vi.spyOn(studentsRepository, 'findProfileByUserId').mockResolvedValue(sampleProfile);
+
+      const res = await request(app)
+        .get('/api/v1/students/me')
+        .set('Authorization', `Bearer ${studentSelfToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.id).toBe(studentId);
+      expect(res.body.data.gradeName).toBe('Grade 10 - Section A');
+    });
+
+    it('rejects unauthenticated requests (401)', async () => {
+      const app = createApp();
+      const res = await request(app).get('/api/v1/students/me');
+
+      expect(res.status).toBe(401);
+    });
+
+    it('rejects access for non-student role (403)', async () => {
+      const app = createApp();
+      const res = await request(app)
+        .get('/api/v1/students/me')
+        .set('Authorization', `Bearer ${ownSchoolAdminToken}`);
 
       expect(res.status).toBe(403);
     });
