@@ -42,6 +42,12 @@ export const studentsRouter: Router = Router();
 
 // Student self context routes (must precede /:studentId)
 studentsRouter.get('/me', authenticate, authorize('student'), studentsController.getMe);
+studentsRouter.get(
+  '/me/subjects',
+  authenticate,
+  authorize('student'),
+  studentsController.getMySubjects,
+);
 
 // Get student by ID (super_admin, school staff, or student themselves)
 studentsRouter.get(

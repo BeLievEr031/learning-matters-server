@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { StudentsService } from './students.service.js';
-import { StudentsRepository, type StudentProfileResult } from './students.repository.js';
+import {
+  StudentsRepository,
+  type StudentProfileResult,
+  type StudentAssignedSubjectResult,
+} from './students.repository.js';
 import { GradesRepository } from '../grades/grades.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { TeachersRepository } from '../teachers/teachers.repository.js';
@@ -651,6 +655,69 @@ describe('StudentsService', () => {
       });
 
       await expect(service.getMyProfile(userId)).rejects.toThrow(ForbiddenError);
+    });
+  });
+
+  describe('getMyAssignedSubjects', () => {
+    const mockSubjects: StudentAssignedSubjectResult[] = [
+      {
+        id: 'subject-1',
+        name: 'Mathematics',
+        code: 'MATH-10',
+        description: 'Standard Math',
+        status: 'active',
+        totalChapters: 12,
+        totalMaterials: 24,
+        teachers: [{ id: 'teacher-1', name: 'Edna Krabappel' }],
+      },
+    ];
+
+    const mockProfileForSubjects: StudentProfileResult = {
+      id: mockStudent.id,
+      userId,
+      schoolId: school1Id,
+      schoolName: 'Springfield Elementary',
+      schoolCode: 'SPFLD',
+      boardId,
+      boardName: 'State Board',
+      boardCode: 'SB',
+      gradeId: grade1Id,
+      gradeName: 'Grade 10 - Section A',
+      gradeCode: 'G10-A',
+      gradeNumber: 10,
+      section: 'A',
+      admissionNumber: 'ADM-2026-001',
+      firstName: 'Bart',
+      lastName: 'Simpson',
+      dateOfBirth: new Date('2012-04-01T00:00:00Z'),
+      gender: 'male',
+      email: 'bart@simpson.edu',
+      phone: null,
+      guardianName: 'Homer Simpson',
+      guardianPhone: null,
+      guardianEmail: null,
+      address: null,
+      status: 'active',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    it('returns assigned subjects for student enrolled grade', async () => {
+      vi.spyOn(mockStudentsRepo, 'findProfileByUserId').mockResolvedValue(mockProfileForSubjects);
+      vi.spyOn(mockStudentsRepo, 'findAssignedSubjectsByGradeId').mockResolvedValue(mockSubjects);
+
+      const result = await service.getMyAssignedSubjects(userId);
+      expect(result).toEqual(mockSubjects);
+      expect(result[0]?.totalChapters).toBe(12);
+      expect(result[0]?.teachers[0]?.name).toBe('Edna Krabappel');
+    });
+
+    it('throws NotFoundError if student profile is not found', async () => {
+      vi.spyOn(mockStudentsRepo, 'findProfileByUserId').mockResolvedValue(null);
+
+      await expect(service.getMyAssignedSubjects('non-existent-user')).rejects.toThrow(
+        NotFoundError,
+      );
     });
   });
 });

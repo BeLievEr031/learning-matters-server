@@ -22,6 +22,18 @@ export class StudentsController {
     }
   };
 
+  getMySubjects = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Authentication required');
+      }
+      const subjects = await this.service.getMyAssignedSubjects(req.user.id);
+      res.status(200).json({ data: subjects });
+    } catch (err) {
+      next(err);
+    }
+  };
+
   createStudent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const gradeId = req.params.gradeId as string;

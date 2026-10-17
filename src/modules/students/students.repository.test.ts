@@ -388,4 +388,87 @@ describe('StudentsRepository', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('findAssignedSubjectsByGradeId', () => {
+    it('returns empty array when no subjects are assigned to the grade', async () => {
+      vi.spyOn(db, 'select').mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              orderBy: vi.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
+      } as never);
+
+      const result = await studentsRepository.findAssignedSubjectsByGradeId(mockStudent.gradeId);
+      expect(result).toEqual([]);
+    });
+
+    it('returns assigned subjects with chapter count, material count, and teachers', async () => {
+      const mockAssigned = [
+        {
+          id: 'subject-1',
+          name: 'Mathematics',
+          code: 'MATH-10',
+          description: 'Standard Math',
+          status: 'active',
+        },
+      ];
+
+      let callCount = 0;
+      vi.spyOn(db, 'select').mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            from: vi.fn().mockReturnValue({
+              innerJoin: vi.fn().mockReturnValue({
+                where: vi.fn().mockReturnValue({
+                  orderBy: vi.fn().mockResolvedValue(mockAssigned),
+                }),
+              }),
+            }),
+          } as never;
+        } else if (callCount === 2) {
+          return {
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                groupBy: vi.fn().mockResolvedValue([{ subjectId: 'subject-1', count: 5 }]),
+              }),
+            }),
+          } as never;
+        } else if (callCount === 3) {
+          return {
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                groupBy: vi.fn().mockResolvedValue([{ subjectId: 'subject-1', count: 12 }]),
+              }),
+            }),
+          } as never;
+        } else {
+          return {
+            from: vi.fn().mockReturnValue({
+              innerJoin: vi.fn().mockReturnValue({
+                where: vi.fn().mockResolvedValue([
+                  {
+                    subjectId: 'subject-1',
+                    teacherId: 'teacher-1',
+                    firstName: 'Edna',
+                    lastName: 'Krabappel',
+                  },
+                ]),
+              }),
+            }),
+          } as never;
+        }
+      });
+
+      const result = await studentsRepository.findAssignedSubjectsByGradeId(mockStudent.gradeId);
+      expect(result).toHaveLength(1);
+      expect(result[0]?.id).toBe('subject-1');
+      expect(result[0]?.totalChapters).toBe(5);
+      expect(result[0]?.totalMaterials).toBe(12);
+      expect(result[0]?.teachers).toEqual([{ id: 'teacher-1', name: 'Edna Krabappel' }]);
+    });
+  });
 });

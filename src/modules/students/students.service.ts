@@ -3,6 +3,7 @@ import {
   studentsRepository,
   type StudentsRepository,
   type StudentProfileResult,
+  type StudentAssignedSubjectResult,
 } from './students.repository.js';
 import { gradesRepository, type GradesRepository } from '../grades/grades.repository.js';
 import { usersRepository, type UsersRepository } from '../users/users.repository.js';
@@ -203,6 +204,14 @@ export class StudentsService {
     }
 
     return profile;
+  }
+
+  /**
+   * Get subjects assigned to the authenticated student's grade.
+   */
+  async getMyAssignedSubjects(callerUserId: string): Promise<StudentAssignedSubjectResult[]> {
+    const profile = await this.getMyProfile(callerUserId);
+    return this.repo.findAssignedSubjectsByGradeId(profile.gradeId);
   }
 
   /**

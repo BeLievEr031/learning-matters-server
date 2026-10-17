@@ -526,4 +526,80 @@ describe('Students Module API', () => {
       expect(res.status).toBe(403);
     });
   });
+
+  describe('GET /api/v1/students/me/subjects', () => {
+    const mockSubjects = [
+      {
+        id: 'subject-1',
+        name: 'Mathematics',
+        code: 'MATH-10',
+        description: 'Standard Math',
+        status: 'active',
+        totalChapters: 12,
+        totalMaterials: 24,
+        teachers: [{ id: 'teacher-1', name: 'Edna Krabappel' }],
+      },
+    ];
+
+    it('returns assigned subjects (200) for authenticated student', async () => {
+      const app = createApp();
+      vi.spyOn(studentsRepository, 'findProfileByUserId').mockResolvedValue({
+        id: studentId,
+        userId: studentUserId,
+        schoolId: school1Id,
+        schoolName: 'Greenwood High',
+        schoolCode: 'GWH',
+        boardId: boardId,
+        boardName: 'CBSE',
+        boardCode: 'CBSE',
+        gradeId: grade1Id,
+        gradeName: 'Grade 10 - Section A',
+        gradeCode: 'G10-A',
+        gradeNumber: 10,
+        section: 'A',
+        admissionNumber: 'ADM-2026-001',
+        firstName: 'Bart',
+        lastName: 'Simpson',
+        dateOfBirth: new Date('2012-04-01T00:00:00Z'),
+        gender: 'male',
+        email: 'bart@simpson.edu',
+        phone: null,
+        guardianName: 'Homer Simpson',
+        guardianPhone: null,
+        guardianEmail: null,
+        address: null,
+        status: 'active',
+        createdAt: new Date('2026-01-01T12:00:00Z'),
+        updatedAt: new Date('2026-01-01T12:00:00Z'),
+      });
+      vi.spyOn(studentsRepository, 'findAssignedSubjectsByGradeId').mockResolvedValue(
+        mockSubjects as never,
+      );
+
+      const res = await request(app)
+        .get('/api/v1/students/me/subjects')
+        .set('Authorization', `Bearer ${studentSelfToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.data[0]?.name).toBe('Mathematics');
+      expect(res.body.data[0]?.totalChapters).toBe(12);
+    });
+
+    it('rejects unauthenticated request (401)', async () => {
+      const app = createApp();
+      const res = await request(app).get('/api/v1/students/me/subjects');
+
+      expect(res.status).toBe(401);
+    });
+
+    it('rejects access for non-student role (403)', async () => {
+      const app = createApp();
+      const res = await request(app)
+        .get('/api/v1/students/me/subjects')
+        .set('Authorization', `Bearer ${ownSchoolTeacherToken}`);
+
+      expect(res.status).toBe(403);
+    });
+  });
 });

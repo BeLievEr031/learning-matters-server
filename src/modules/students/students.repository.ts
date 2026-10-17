@@ -1,4 +1,4 @@
-import { eq, isNull, and, or, lt, desc, asc, ilike, inArray, sql } from 'drizzle-orm';
+import { eq, isNull, and, or, lt, desc, asc, ilike, inArray, sql, count } from 'drizzle-orm';
 import { db } from '../../db/pool.js';
 import type { Transaction } from '../../db/transaction.js';
 import {
@@ -10,8 +10,29 @@ import {
 import { schools } from '../../db/schema/schools.js';
 import { boards } from '../../db/schema/boards.js';
 import { grades } from '../../db/schema/grades.js';
+import { subjects, gradeSubjects, type SubjectStatus } from '../../db/schema/subjects.js';
+import { chapters } from '../../db/schema/chapters.js';
+import { chapterMaterials } from '../../db/schema/chapter-materials.js';
+import { teachers } from '../../db/schema/teachers.js';
+import { teacherAssignments } from '../../db/schema/teacher-assignments.js';
 import type { CursorPayload } from '../../lib/pagination.js';
 import type { STUDENT_SORT_FIELDS } from './students.schemas.js';
+
+export interface StudentAssignedSubjectTeacher {
+  id: string;
+  name: string;
+}
+
+export interface StudentAssignedSubjectResult {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  status: SubjectStatus;
+  totalChapters: number;
+  totalMaterials: number;
+  teachers: StudentAssignedSubjectTeacher[];
+}
 
 export interface StudentProfileResult {
   id: string;
@@ -190,6 +211,110 @@ export class StudentsRepository {
       .limit(1);
 
     return rows[0] ?? null;
+  }
+
+  /**
+   * Find active subjects assigned to a student's grade with chapter and material counts and assigned teachers.
+   */
+  async findAssignedSubjectsByGradeId(gradeId: string): Promise<StudentAssignedSubjectResult[]> {
+    const assignedSubjects = await db
+      .select({
+        id: subjects.id,
+        name: subjects.name,
+        code: subjects.code,
+        description: subjects.description,
+        status: subjects.status,
+      })
+      .from(gradeSubjects)
+      .innerJoin(subjects, eq(gradeSubjects.subjectId, subjects.id))
+      .where(
+        and(
+          eq(gradeSubjects.gradeId, gradeId),
+          eq(gradeSubjects.status, 'active'),
+          eq(subjects.status, 'active'),
+          isNull(subjects.deletedAt),
+        ),
+      )
+      .orderBy(asc(subjects.name));
+
+    if (assignedSubjects.length === 0) {
+      return [];
+    }
+
+    const subjectIds = assignedSubjects.map((s) => s.id);
+
+    // Fetch active chapter counts per subject
+    const chapterCounts = await db
+      .select({
+        subjectId: chapters.subjectId,
+        count: count(chapters.id),
+      })
+      .from(chapters)
+      .where(
+        and(
+          inArray(chapters.subjectId, subjectIds),
+          eq(chapters.status, 'active'),
+          isNull(chapters.deletedAt),
+        ),
+      )
+      .groupBy(chapters.subjectId);
+
+    const chapterCountMap = new Map(chapterCounts.map((c) => [c.subjectId, c.count]));
+
+    // Fetch non-deleted chapter material counts per subject
+    const materialCounts = await db
+      .select({
+        subjectId: chapterMaterials.subjectId,
+        count: count(chapterMaterials.id),
+      })
+      .from(chapterMaterials)
+      .where(
+        and(inArray(chapterMaterials.subjectId, subjectIds), isNull(chapterMaterials.deletedAt)),
+      )
+      .groupBy(chapterMaterials.subjectId);
+
+    const materialCountMap = new Map(materialCounts.map((m) => [m.subjectId, m.count]));
+
+    // Fetch teachers assigned to this grade and these subjects
+    const teacherRows = await db
+      .select({
+        subjectId: teacherAssignments.subjectId,
+        teacherId: teachers.id,
+        firstName: teachers.firstName,
+        lastName: teachers.lastName,
+      })
+      .from(teacherAssignments)
+      .innerJoin(teachers, eq(teacherAssignments.teacherId, teachers.id))
+      .where(
+        and(
+          eq(teacherAssignments.gradeId, gradeId),
+          inArray(teacherAssignments.subjectId, subjectIds),
+          eq(teacherAssignments.status, 'active'),
+          isNull(teacherAssignments.deletedAt),
+          isNull(teachers.deletedAt),
+        ),
+      );
+
+    const teacherMap = new Map<string, StudentAssignedSubjectTeacher[]>();
+    for (const t of teacherRows) {
+      const list = teacherMap.get(t.subjectId) ?? [];
+      list.push({
+        id: t.teacherId,
+        name: `${t.firstName} ${t.lastName}`.trim(),
+      });
+      teacherMap.set(t.subjectId, list);
+    }
+
+    return assignedSubjects.map((s) => ({
+      id: s.id,
+      name: s.name,
+      code: s.code,
+      description: s.description,
+      status: s.status,
+      totalChapters: chapterCountMap.get(s.id) ?? 0,
+      totalMaterials: materialCountMap.get(s.id) ?? 0,
+      teachers: teacherMap.get(s.id) ?? [],
+    }));
   }
 
   /**
