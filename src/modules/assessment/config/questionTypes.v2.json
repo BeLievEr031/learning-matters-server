@@ -1,0 +1,640 @@
+{
+  "version": "2.1",
+  "bloom_allowed": [
+    "understand",
+    "apply",
+    "analyze",
+    "evaluate"
+  ],
+  "case_sub_types": [
+    "mcq_single",
+    "true_false",
+    "fill_blank",
+    "short_answer",
+    "numerical"
+  ],
+  "types": [
+    {
+      "id": "mcq_single",
+      "label": "Single-Answer MCQ",
+      "description": "Select one correct option.",
+      "default_marks": 1,
+      "est_time_sec": 60,
+      "weight": 3,
+      "grading": "auto",
+      "eligibility": null,
+      "rules": [
+        "Exactly 4 options and exactly 1 correct. Every wrong option must be a plausible misconception mapped to triggers_misconception_id and explained in distractor_rationale.",
+        "No 'all of the above' or 'none of the above'. Keep option lengths similar. Randomise the position of the correct option across the paper.",
+        "The stem must be self-contained and require reasoning or application, not recognition of a memorised sentence."
+      ],
+      "content_example": {
+        "options": [
+          {
+            "id": "A",
+            "text": "...",
+            "triggers_misconception_id": "D1_M1",
+            "distractor_rationale": "..."
+          },
+          {
+            "id": "B",
+            "text": "...",
+            "triggers_misconception_id": null,
+            "distractor_rationale": null
+          },
+          {
+            "id": "C",
+            "text": "...",
+            "triggers_misconception_id": "D1_M2",
+            "distractor_rationale": "..."
+          },
+          {
+            "id": "D",
+            "text": "...",
+            "triggers_misconception_id": "D1_M3",
+            "distractor_rationale": "..."
+          }
+        ]
+      },
+      "answer_key_example": {
+        "correct_option_id": "B"
+      },
+      "response_example": {
+        "selected_option_id": "B"
+      }
+    },
+    {
+      "id": "mcq_multi",
+      "label": "Multiple-Select MCQ",
+      "description": "Select all correct options.",
+      "default_marks": 2,
+      "est_time_sec": 90,
+      "weight": 1,
+      "grading": "auto",
+      "eligibility": null,
+      "rules": [
+        "4 to 6 options. Between 2 and (number of options minus 1) options are correct: never exactly one, never all.",
+        "The stem must say 'Select all that apply'. Each wrong option must include triggers_misconception_id and distractor_rationale.",
+        "Scoring is partial credit without negative marks: score = max(0, (correct selected - wrong selected) / total correct) x marks."
+      ],
+      "content_example": {
+        "options": [
+          {
+            "id": "A",
+            "text": "...",
+            "triggers_misconception_id": null,
+            "distractor_rationale": null
+          },
+          {
+            "id": "B",
+            "text": "...",
+            "triggers_misconception_id": "D1_M1",
+            "distractor_rationale": "..."
+          },
+          {
+            "id": "C",
+            "text": "...",
+            "triggers_misconception_id": null,
+            "distractor_rationale": null
+          },
+          {
+            "id": "D",
+            "text": "...",
+            "triggers_misconception_id": "D1_M2",
+            "distractor_rationale": "..."
+          }
+        ]
+      },
+      "answer_key_example": {
+        "correct_option_ids": [
+          "A",
+          "C"
+        ],
+        "scoring": {
+          "mode": "partial_no_negative"
+        }
+      },
+      "response_example": {
+        "selected_option_ids": [
+          "A",
+          "C"
+        ]
+      }
+    },
+    {
+      "id": "true_false",
+      "label": "True or False",
+      "description": "Decide whether a statement is correct.",
+      "default_marks": 1,
+      "est_time_sec": 45,
+      "weight": 2,
+      "grading": "hybrid",
+      "eligibility": null,
+      "rules": [
+        "One idea per statement; no double-barrelled statements. Decidable only by understanding.",
+        "About half of the true/false questions in the paper should be false, embedding a realistic misconception.",
+        "Set justification_required to true for at least half of them and give the correct_justification in one line."
+      ],
+      "content_example": {
+        "statement": "...",
+        "justification_required": true
+      },
+      "answer_key_example": {
+        "correct_answer": false,
+        "correct_justification": "..."
+      },
+      "response_example": {
+        "answer": false,
+        "justification": "..."
+      }
+    },
+    {
+      "id": "fill_blank",
+      "label": "Fill in the Blanks",
+      "description": "Enter the missing word, number, or term.",
+      "default_marks": 1,
+      "est_time_sec": 45,
+      "weight": 2,
+      "grading": "auto",
+      "eligibility": null,
+      "rules": [
+        "Use {{b1}}, {{b2}} placeholders inside question_text. Maximum 2 blanks.",
+        "Blanks must be concept words, numbers or terms that need reasoning, never articles, filler words or phrases copied from the material.",
+        "Provide answer_type (word, number or term), accepted_variants, and common_wrong_answers mapped to triggers_misconception_id."
+      ],
+      "content_example": {
+        "blank_count": 2
+      },
+      "answer_key_example": {
+        "blanks": [
+          {
+            "id": "b1",
+            "answer": "...",
+            "answer_type": "term",
+            "accepted_variants": [
+              "..."
+            ],
+            "common_wrong_answers": [
+              {
+                "value": "...",
+                "triggers_misconception_id": "D1_M1"
+              }
+            ]
+          },
+          {
+            "id": "b2",
+            "answer": "...",
+            "answer_type": "number",
+            "accepted_variants": [],
+            "common_wrong_answers": []
+          }
+        ]
+      },
+      "response_example": {
+        "blanks": {
+          "b1": "...",
+          "b2": "..."
+        }
+      }
+    },
+    {
+      "id": "match_following",
+      "label": "Match the Following",
+      "description": "Match concepts with their corresponding answers.",
+      "default_marks": 4,
+      "est_time_sec": 120,
+      "weight": 1,
+      "grading": "auto",
+      "eligibility": null,
+      "rules": [
+        "4 left items (L1..L4). The right list (R1..R6) must have 1 or 2 extra distractors. Matching is one-to-one.",
+        "Match by relationship (cause and effect, concept and example in a NEW context), not copied term-to-definition pairs.",
+        "Shuffle the right list. Marks are shared equally across pairs (scoring per_pair)."
+      ],
+      "content_example": {
+        "instruction": "Match each item in Column A with the correct item in Column B.",
+        "left_items": [
+          {
+            "id": "L1",
+            "text": "..."
+          }
+        ],
+        "right_items": [
+          {
+            "id": "R1",
+            "text": "..."
+          }
+        ]
+      },
+      "answer_key_example": {
+        "pairs": [
+          {
+            "left_id": "L1",
+            "right_id": "R2"
+          }
+        ],
+        "scoring": {
+          "mode": "per_pair"
+        }
+      },
+      "response_example": {
+        "pairs": [
+          {
+            "left_id": "L1",
+            "right_id": "R2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "numerical",
+      "label": "Numerical Answer",
+      "description": "Solve a problem and enter a number.",
+      "default_marks": 2,
+      "est_time_sec": 150,
+      "weight": 1,
+      "grading": "auto",
+      "eligibility": null,
+      "rules": [
+        "Generate only if the material supports quantitative reasoning; otherwise skip and report in meta.skipped_types.",
+        "Use fresh numbers, not those in the material. State unit and rounding required. Provide a tolerance.",
+        "Give solution_steps and 2 to 3 common_wrong_values, each tagged with triggers_misconception_id and error_type."
+      ],
+      "content_example": {
+        "given_data": "...",
+        "unit_expected": "..."
+      },
+      "answer_key_example": {
+        "correct_value": 0,
+        "unit": "...",
+        "tolerance": {
+          "type": "absolute",
+          "value": 0.01
+        },
+        "solution_steps": [
+          "..."
+        ],
+        "common_wrong_values": [
+          {
+            "value": 0,
+            "triggers_misconception_id": "D1_M1",
+            "error_type": "..."
+          }
+        ]
+      },
+      "response_example": {
+        "value": 0,
+        "unit": "..."
+      }
+    },
+    {
+      "id": "short_answer",
+      "label": "Short Answer",
+      "description": "Answer in a word or a short sentence.",
+      "default_marks": 2,
+      "est_time_sec": 60,
+      "weight": 2,
+      "grading": "hybrid",
+      "eligibility": null,
+      "rules": [
+        "Expected answer is at most 15 words. Must need reasoning (why, what happens if), not definition recall.",
+        "List accepted_variants and key_points (keywords) a correct answer must contain."
+      ],
+      "content_example": {
+        "max_words": 15
+      },
+      "answer_key_example": {
+        "expected_answer": "...",
+        "accepted_variants": [
+          "..."
+        ],
+        "key_points": [
+          "..."
+        ]
+      },
+      "response_example": {
+        "text": "..."
+      }
+    },
+    {
+      "id": "assertion_reason",
+      "label": "Assertion and Reason",
+      "description": "Evaluate a statement and its explanation.",
+      "default_marks": 2,
+      "est_time_sec": 90,
+      "weight": 1,
+      "grading": "auto",
+      "eligibility": null,
+      "rules": [
+        "Use options A, B, C, D as defined in content_example. R must not simply restate A.",
+        "Fill assertion_true, reason_true, and reason_explains_assertion in answer_key so they agree with correct_option_id."
+      ],
+      "content_example": {
+        "assertion": "...",
+        "reason": "...",
+        "options": [
+          {
+            "id": "A",
+            "text": "Both A and R are true, and R is the correct explanation of A"
+          },
+          {
+            "id": "B",
+            "text": "Both A and R are true, but R is NOT the correct explanation of A"
+          },
+          {
+            "id": "C",
+            "text": "A is true, but R is false"
+          },
+          {
+            "id": "D",
+            "text": "A is false, but R is true"
+          }
+        ]
+      },
+      "answer_key_example": {
+        "correct_option_id": "B",
+        "assertion_true": true,
+        "reason_true": true,
+        "reason_explains_assertion": false
+      },
+      "response_example": {
+        "selected_option_id": "B"
+      }
+    },
+    {
+      "id": "order_steps",
+      "label": "Order the Steps",
+      "description": "Arrange items in the correct sequence.",
+      "default_marks": 2,
+      "est_time_sec": 90,
+      "weight": 1,
+      "grading": "auto",
+      "eligibility": null,
+      "rules": [
+        "4 to 5 steps from a process or line of reasoning in a new context. Order must be logically forced.",
+        "List items in content.items in SHUFFLED order. Put right order in answer_key.correct_order."
+      ],
+      "content_example": {
+        "instruction": "Arrange the steps in the correct order.",
+        "items": [
+          {
+            "id": "S1",
+            "text": "..."
+          }
+        ]
+      },
+      "answer_key_example": {
+        "correct_order": [
+          "S3",
+          "S1",
+          "S2",
+          "S4"
+        ],
+        "dependency_notes": [
+          {
+            "after": "S3",
+            "note": "..."
+          }
+        ],
+        "scoring": {
+          "mode": "adjacent_pairs"
+        }
+      },
+      "response_example": {
+        "ordered_ids": [
+          "S3",
+          "S1",
+          "S2",
+          "S4"
+        ]
+      }
+    },
+    {
+      "id": "identify_error",
+      "label": "Identify the Error",
+      "description": "Find the mistake in a statement or solution.",
+      "default_marks": 2,
+      "est_time_sec": 120,
+      "weight": 1,
+      "grading": "hybrid",
+      "eligibility": null,
+      "rules": [
+        "Present a worked solution broken into 4 numbered steps (E1..E4). Exactly one deliberate conceptual error (errors_count = 1).",
+        "Provide error_step_ids, error_type, why_wrong, and corrected_text."
+      ],
+      "content_example": {
+        "format": "solution_steps",
+        "intro": "A student worked on this problem as shown below.",
+        "steps": [
+          {
+            "id": "E1",
+            "text": "..."
+          }
+        ],
+        "errors_count": 1
+      },
+      "answer_key_example": {
+        "error_step_ids": [
+          "E2"
+        ],
+        "error_type": "conceptual",
+        "why_wrong": "...",
+        "corrected_text": "...",
+        "marks_split": {
+          "locate": 1,
+          "correct": 1
+        }
+      },
+      "response_example": {
+        "error_step_ids": [
+          "E2"
+        ],
+        "correction": "..."
+      }
+    },
+    {
+      "id": "scenario_mcq",
+      "label": "Scenario-Based MCQ",
+      "description": "Apply a concept to a real-world situation.",
+      "default_marks": 1,
+      "est_time_sec": 90,
+      "weight": 2,
+      "grading": "auto",
+      "eligibility": null,
+      "rules": [
+        "A 2 to 4 sentence unseen real-world scenario requiring today's concept.",
+        "4 options, 1 correct, misconception-based distractors mapped to triggers_misconception_id."
+      ],
+      "content_example": {
+        "scenario": "...",
+        "options": [
+          {
+            "id": "A",
+            "text": "...",
+            "triggers_misconception_id": "D1_M1",
+            "distractor_rationale": "..."
+          },
+          {
+            "id": "B",
+            "text": "...",
+            "triggers_misconception_id": null,
+            "distractor_rationale": null
+          },
+          {
+            "id": "C",
+            "text": "...",
+            "triggers_misconception_id": "D1_M2",
+            "distractor_rationale": "..."
+          },
+          {
+            "id": "D",
+            "text": "...",
+            "triggers_misconception_id": "D1_M3",
+            "distractor_rationale": "..."
+          }
+        ]
+      },
+      "answer_key_example": {
+        "correct_option_id": "B"
+      },
+      "response_example": {
+        "selected_option_id": "B"
+      }
+    },
+    {
+      "id": "case_based",
+      "label": "Case-Based Question",
+      "description": "Answer a few short questions based on a shared scenario.",
+      "default_marks": 5,
+      "est_time_sec": 300,
+      "weight": 1,
+      "grading": "hybrid",
+      "eligibility": null,
+      "rules": [
+        "One shared case (80 to 150 words) in a new context, followed by 3 to 5 independent sub-questions that escalate in Bloom level.",
+        "Sub-question marks must sum to the case's marks. Top-level answer_key is null."
+      ],
+      "content_example": {
+        "case_text": "...",
+        "case_format": "text",
+        "sub_questions": [
+          {
+            "sub_question_id": "Q12.1",
+            "sub_type": "mcq_single",
+            "question_text": "...",
+            "marks": 1,
+            "concept_ids": [
+              "D1_C1"
+            ],
+            "bloom_level": "apply",
+            "content": {
+              "options": []
+            },
+            "answer_key": {
+              "correct_option_id": "B"
+            }
+          }
+        ]
+      },
+      "answer_key_example": null,
+      "response_example": {
+        "sub_responses": {
+          "Q12.1": {
+            "selected_option_id": "B"
+          }
+        }
+      }
+    },
+    {
+      "id": "code_based",
+      "label": "Code-Based Question",
+      "description": "Predict output or identify an error in code.",
+      "default_marks": 2,
+      "est_time_sec": 150,
+      "weight": 1,
+      "grading": "hybrid",
+      "eligibility": {
+        "subject_categories": [
+          "programming"
+        ]
+      },
+      "rules": [
+        "Only for programming subjects. At most 15 lines, deterministic, fresh code.",
+        "Test conceptual understanding (scope, off-by-one, mutation, control flow)."
+      ],
+      "content_example": {
+        "language": "python",
+        "task": "predict_output",
+        "code": "...",
+        "response_mode": "text",
+        "options": null
+      },
+      "answer_key_example": {
+        "expected_output": "...",
+        "accepted_variants": [
+          "..."
+        ],
+        "trace": [
+          "line 1: ..."
+        ],
+        "error_line": null,
+        "fix": null
+      },
+      "response_example": {
+        "text": "..."
+      }
+    },
+    {
+      "id": "drag_drop_classify",
+      "label": "Drag-and-Drop Classification",
+      "description": "Categorize items into the correct groups.",
+      "default_marks": 3,
+      "est_time_sec": 120,
+      "weight": 1,
+      "grading": "auto",
+      "eligibility": null,
+      "rules": [
+        "2 to 4 mutually exclusive categories and 6 items. Include look-alike items that target common misconceptions.",
+        "Classification must depend on the concept taught today. Shuffle the items. Scoring is per_item."
+      ],
+      "content_example": {
+        "instruction": "Drag each item into the correct category.",
+        "categories": [
+          {
+            "id": "K1",
+            "name": "..."
+          },
+          {
+            "id": "K2",
+            "name": "..."
+          }
+        ],
+        "items": [
+          {
+            "id": "I1",
+            "text": "..."
+          }
+        ]
+      },
+      "answer_key_example": {
+        "mapping": [
+          {
+            "item_id": "I1",
+            "category_id": "K1"
+          }
+        ],
+        "scoring": {
+          "mode": "per_item"
+        }
+      },
+      "response_example": {
+        "mapping": [
+          {
+            "item_id": "I1",
+            "category_id": "K1"
+          }
+        ]
+      }
+    }
+  ]
+}

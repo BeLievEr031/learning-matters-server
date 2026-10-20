@@ -1,0 +1,60 @@
+{
+  "paper_id": "string (unique id like chem_eq_10_001)",
+  "meta": {
+    "subject": "string",
+    "grade": "string",
+    "topic": "string",
+    "day_number": 1,
+    "lesson_date": "YYYY-MM-DD",
+    "language": "en",
+    "duration_minutes": 30,
+    "total_marks": 25,
+    "question_counts": {
+      "mcq_single": 3,
+      "true_false": 2
+    },
+    "skipped_types": [],
+    "generation_notes": "string or null"
+  },
+  "concepts": [
+    {
+      "concept_id": "D1_C1",
+      "name": "string",
+      "description": "string",
+      "prerequisites": [
+        "string"
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "misconception_id": "D1_M1",
+      "concept_id": "D1_C1",
+      "name": "string",
+      "description": "string",
+      "teacher_remediation_tip": "string"
+    }
+  ],
+  "questions": [
+    {
+      "question_id": "Q1",
+      "type": "mcq_single",
+      "concept_ids": [
+        "D1_C1"
+      ],
+      "primary_misconception_id": "D1_M1",
+      "context_novelty": "novel",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "marks": 1,
+      "estimated_time_sec": 75,
+      "question_text": "string",
+      "misconception_targeted": "string",
+      "why_tests_understanding": "string",
+      "source_evidence": "string",
+      "content": {},
+      "answer_key": {},
+      "explanation": "string"
+    }
+  ]
+}
